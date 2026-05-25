@@ -1,26 +1,155 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
+
+/* ── MES Design System ─────────────────────────────────────────────────── */
+/* Based on Ref/ UI mockups — clean industrial light theme */
 
 @theme inline {
+  /* Typography */
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-inter);
+
+  /* Brand colors */
+  --color-primary: #185FA5;
+  --color-primary-hover: #1353922;
+  --color-success: #1D9E75;
+  --color-warning: #EF9F27;
+  --color-danger: #E84040;
+
+  /* Status pills — from Ref */
+  --color-pass-bg: #EAF3DE;
+  --color-pass-text: #27500A;
+  --color-pass-border: #97C459;
+  --color-warn-bg: #FAEEDA;
+  --color-warn-text: #633806;
+  --color-warn-border: #EF9F27;
+  --color-reject-bg: #FCEBEB;
+  --color-reject-text: #791F1F;
+  --color-reject-border: #F09595;
+  --color-active-bg: #E6F1FB;
+  --color-active-text: #0C447C;
+  --color-active-border: #85B7EB;
+  --color-pending-bg: #F1EFE8;
+  --color-pending-text: #5F5E5A;
+  --color-rework-bg: #EEEDFE;
+  --color-rework-text: #3C3489;
+  --color-rework-border: #AFA9EC;
+
+  /* Shadcn tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* Light industrial theme */
+  --background: oklch(0.98 0 0);
+  --foreground: oklch(0.14 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.14 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.14 0 0);
+  --primary: oklch(0.39 0.12 248);   /* #185FA5 */
+  --primary-foreground: oklch(0.97 0.01 248);
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.2 0 0);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.55 0 0);
+  --accent: oklch(0.94 0 0);
+  --accent-foreground: oklch(0.2 0 0);
+  --destructive: oklch(0.57 0.22 27);
+  --border: oklch(0.9 0 0);
+  --input: oklch(0.9 0 0);
+  --ring: oklch(0.7 0 0);
+  --radius: 6px;
+  --sidebar: oklch(0.975 0 0);
+  --sidebar-foreground: oklch(0.14 0 0);
+  --sidebar-primary: oklch(0.39 0.12 248);
+  --sidebar-primary-foreground: oklch(0.97 0.01 248);
+  --sidebar-accent: oklch(0.94 0 0);
+  --sidebar-accent-foreground: oklch(0.2 0 0);
+  --sidebar-border: oklch(0.9 0 0);
+  --sidebar-ring: oklch(0.7 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  html {
+    @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+/* ── Utility classes for MES ───────────────────────────────────────────── */
+
+/* Status pills */
+.pill-pass    { background: #EAF3DE; color: #27500A; border: 0.5px solid #97C459; }
+.pill-warn    { background: #FAEEDA; color: #633806; border: 0.5px solid #EF9F27; }
+.pill-reject  { background: #FCEBEB; color: #791F1F; border: 0.5px solid #F09595; }
+.pill-active  { background: #E6F1FB; color: #0C447C; border: 0.5px solid #85B7EB; }
+.pill-pending { background: #F1EFE8; color: #5F5E5A; border: 0.5px solid #D9D7CE; }
+.pill-rework  { background: #EEEDFE; color: #3C3489; border: 0.5px solid #AFA9EC; }
+.pill-urgent  { background: #FCEBEB; color: #791F1F; border: 0.5px solid #F09595; }
+.pill-high    { background: #FAEEDA; color: #633806; border: 0.5px solid #EF9F27; }
+.pill-normal  { background: #E6F1FB; color: #0C447C; border: 0.5px solid #85B7EB; }
+.pill-low     { background: #F1EFE8; color: #5F5E5A; border: 0.5px solid #D9D7CE; }
+
+/* Stage progress bar segments */
+.stage-seg       { height: 4px; flex: 1; border-radius: 2px; }
+.stage-seg-done  { background: #1D9E75; }
+.stage-seg-active{ background: #378ADD; }
+.stage-seg-idle  { background: #E2E0D9; }
+
+/* Touch-friendly tap targets (min 44px per WCAG) */
+.touch-target { min-height: 44px; min-width: 44px; }
+
+/* Action buttons */
+.btn-pass   { background: #EAF3DE; color: #27500A; border: 0.5px solid #97C459; }
+.btn-pass:hover   { background: #d6ecca; }
+.btn-warn   { background: #FAEEDA; color: #633806; border: 0.5px solid #EF9F27; }
+.btn-warn:hover   { background: #f5e0c0; }
+.btn-reject { background: #FCEBEB; color: #791F1F; border: 0.5px solid #F09595; }
+.btn-reject:hover { background: #f8d5d5; }
+.btn-rework { background: #EEEDFE; color: #3C3489; border: 0.5px solid #AFA9EC; }
+.btn-rework:hover { background: #dddcfd; }
+.btn-primary { background: #185FA5; color: #E6F1FB; }
+.btn-primary:hover { background: #135390; }
+.btn-success { background: #1D9E75; color: #E1F5EE; }
+.btn-success:hover { background: #178a63; }

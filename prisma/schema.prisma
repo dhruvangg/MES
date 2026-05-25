@@ -1,0 +1,242 @@
+// prisma/schema.prisma
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum JobStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum RoutingStepStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+}
+
+enum LogAction {
+  PASS
+  REWORK
+  REJECT
+}
+
+enum DIDisposition {
+  UNDER_REVIEW
+  REWORK
+  ACCEPTED_AS_IS
+  REJECTED
+}
+
+enum DIReason {
+  DIMENSION_ISSUE
+  SURFACE_FINISH
+  CRACK
+  MACHINE_ISSUE
+  WRONG_SETUP
+  MATERIAL_DEFECT
+  OTHER
+}
+
+// ─── User ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(ADMIN)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  productionLogs      ProductionLog[]
+  discrepancyIssues   DiscrepancyIssue[]
+  updatedRoutingSteps RoutingStep[]      @relation("StepUpdatedBy")
+}
+
+// ─── Customer ───────────────────────────────────────────────────────────────
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  code      String?  @unique
+  contact   String?
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobs Job[]
+}
+
+// ─── Part ───────────────────────────────────────────────────────────────────
+
+model Part {
+  id          String   @id @default(cuid())
+  name        String
+  code        String?  @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobParts JobPart[]
+}
+
+// ─── Drawing ─────────────────────────────────────────────────────────────────
+
+model Drawing {
+  id        String   @id @default(cuid())
+  number    String   @unique
+  revision  String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobParts JobPart[]
+}
+
+// ─── Operation ───────────────────────────────────────────────────────────────
+
+model Operation {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String?  @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  routingSteps RoutingStep[]
+}
+
+// ─── Job ─────────────────────────────────────────────────────────────────────
+
+model Job {
+  id         String    @id @default(cuid())
+  jobNumber  String    @unique
+  customerId String
+  poNumber   String?
+  dueDate    DateTime?
+  priority   Priority  @default(NORMAL)
+  status     JobStatus @default(DRAFT)
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  customer Customer  @relation(fields: [customerId], references: [id])
+  jobParts JobPart[]
+}
+
+// ─── JobPart ─────────────────────────────────────────────────────────────────
+
+model JobPart {
+  id           String   @id @default(cuid())
+  jobId        String
+  partId       String
+  drawingId    String?
+  totalQty     Int
+  completedQty Int      @default(0)
+  rejectedQty  Int      @default(0)
+  reworkQty    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  job      Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  part     Part     @relation(fields: [partId], references: [id])
+  drawing  Drawing? @relation(fields: [drawingId], references: [id])
+
+  routingSteps      RoutingStep[]
+  discrepancyIssues DiscrepancyIssue[]
+  productionLogs    ProductionLog[]
+}
+
+// ─── RoutingStep ─────────────────────────────────────────────────────────────
+
+model RoutingStep {
+  id          String            @id @default(cuid())
+  jobPartId   String
+  operationId String
+  sequence    Int
+  status      RoutingStepStatus @default(PENDING)
+  qtyIn       Int               @default(0)
+  qtyPassed   Int               @default(0)
+  qtyRework   Int               @default(0)
+  qtyRejected Int               @default(0)
+  startedAt   DateTime?
+  completedAt DateTime?
+  updatedById String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  jobPart   JobPart   @relation(fields: [jobPartId], references: [id], onDelete: Cascade)
+  operation Operation @relation(fields: [operationId], references: [id])
+  updatedBy User?     @relation("StepUpdatedBy", fields: [updatedById], references: [id])
+
+  productionLogs    ProductionLog[]
+  discrepancyIssues DiscrepancyIssue[]
+  receivedReworks   DiscrepancyIssue[] @relation("ReworkTarget")
+
+  @@unique([jobPartId, sequence])
+}
+
+// ─── ProductionLog ───────────────────────────────────────────────────────────
+
+model ProductionLog {
+  id            String    @id @default(cuid())
+  jobPartId     String
+  routingStepId String
+  action        LogAction
+  qty           Int
+  notes         String?
+  updatedById   String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  jobPart     JobPart     @relation(fields: [jobPartId], references: [id], onDelete: Cascade)
+  routingStep RoutingStep @relation(fields: [routingStepId], references: [id], onDelete: Cascade)
+  updatedBy   User        @relation(fields: [updatedById], references: [id])
+}
+
+// ─── DiscrepancyIssue ────────────────────────────────────────────────────────
+
+model DiscrepancyIssue {
+  id                 String        @id @default(cuid())
+  jobPartId          String
+  routingStepId      String
+  reworkTargetStepId String?
+  reason             DIReason
+  description        String?
+  qty                Int
+  disposition        DIDisposition @default(UNDER_REVIEW)
+  isReworkable       Boolean       @default(true)
+  resolvedAt         DateTime?
+  updatedById        String
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  jobPart          JobPart      @relation(fields: [jobPartId], references: [id], onDelete: Cascade)
+  routingStep      RoutingStep  @relation(fields: [routingStepId], references: [id], onDelete: Cascade)
+  reworkTargetStep RoutingStep? @relation("ReworkTarget", fields: [reworkTargetStepId], references: [id])
+  updatedBy        User         @relation(fields: [updatedById], references: [id])
+}

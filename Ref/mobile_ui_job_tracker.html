@@ -1,0 +1,274 @@
+
+<style>
+  h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .screens-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:1rem 0}
+  .phone{background:var(--color-background-secondary);border-radius:20px;padding:10px;border:0.5px solid var(--color-border-tertiary)}
+  .screen{background:var(--color-background-primary);border-radius:14px;overflow:hidden;border:0.5px solid var(--color-border-tertiary)}
+  .screen-label{font-size:11px;color:var(--color-text-tertiary);text-align:center;margin:0 0 8px;letter-spacing:.04em}
+  .topbar{background:var(--color-background-primary);padding:10px 12px 8px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between}
+  .topbar-title{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+  .topbar-sub{font-size:11px;color:var(--color-text-tertiary)}
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 10px;background:var(--color-background-secondary)}
+  .stat{background:var(--color-background-primary);border-radius:8px;padding:6px 8px;text-align:center;border:0.5px solid var(--color-border-tertiary)}
+  .stat-n{font-size:16px;font-weight:500;color:var(--color-text-primary)}
+  .stat-l{font-size:10px;color:var(--color-text-tertiary)}
+  .job-card{padding:8px 10px;border-bottom:0.5px solid var(--color-border-tertiary);cursor:pointer}
+  .job-card:last-child{border-bottom:none}
+  .job-card:hover{background:var(--color-background-secondary)}
+  .jc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+  .jc-name{font-size:12px;font-weight:500;color:var(--color-text-primary)}
+  .jc-customer{font-size:11px;color:var(--color-text-secondary)}
+  .jc-meta{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
+  .pill{font-size:10px;padding:2px 6px;border-radius:10px;font-weight:500}
+  .pill-green{background:#EAF3DE;color:#27500A}
+  .pill-amber{background:#FAEEDA;color:#633806}
+  .pill-red{background:#FCEBEB;color:#791F1F}
+  .pill-blue{background:#E6F1FB;color:#0C447C}
+  .pill-gray{background:#F1EFE8;color:#444441}
+  .pill-teal{background:#E1F5EE;color:#085041}
+  .stage-bar{display:flex;gap:2px;margin-top:5px}
+  .sb{height:4px;flex:1;border-radius:2px;background:var(--color-border-tertiary)}
+  .sb.done{background:#1D9E75}
+  .sb.active{background:#378ADD}
+  .sb.pending{background:var(--color-border-tertiary)}
+  .due-warn{font-size:10px;color:var(--color-text-danger)}
+  .due-ok{font-size:10px;color:var(--color-text-tertiary)}
+  .fab{margin:8px 10px;background:#185FA5;border-radius:var(--border-radius-md);padding:8px;text-align:center;font-size:12px;font-weight:500;color:#E6F1FB;cursor:pointer}
+  .back-row{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:0.5px solid var(--color-border-tertiary)}
+  .back-icon{font-size:16px;color:var(--color-text-secondary)}
+  .back-title{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+  .order-info{padding:8px 10px;background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary)}
+  .oi-row{display:flex;justify-content:space-between;margin-bottom:2px}
+  .oi-label{font-size:11px;color:var(--color-text-tertiary)}
+  .oi-val{font-size:11px;color:var(--color-text-primary);font-weight:500}
+  .stage-list-item{padding:8px 10px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;gap:8px}
+  .sli-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+  .sli-done{background:#EAF3DE;color:#27500A}
+  .sli-active{background:#E6F1FB;color:#0C447C}
+  .sli-pending{background:#F1EFE8;color:#5F5E5A}
+  .sli-disc{background:#FAEEDA;color:#633806}
+  .sli-text{flex:1;min-width:0}
+  .sli-name{font-size:12px;font-weight:500;color:var(--color-text-primary)}
+  .sli-sub{font-size:10px;color:var(--color-text-tertiary)}
+  .sli-arrow{font-size:14px;color:var(--color-text-tertiary)}
+  .section-head{padding:6px 10px;background:var(--color-background-secondary);font-size:10px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.05em}
+  .action-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 10px}
+  .act-btn{border-radius:var(--border-radius-md);padding:8px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid}
+  .act-pass{background:#EAF3DE;color:#27500A;border-color:#97C459}
+  .act-disc{background:#FAEEDA;color:#633806;border-color:#EF9F27}
+  .act-reject{background:#FCEBEB;color:#791F1F;border-color:#F09595}
+  .qty-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:6px 10px}
+  .qty-box{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:6px;text-align:center;border:0.5px solid var(--color-border-tertiary)}
+  .qty-n{font-size:15px;font-weight:500;color:var(--color-text-primary)}
+  .qty-l{font-size:10px;color:var(--color-text-tertiary)}
+  .disc-form{padding:8px 10px}
+  .disc-label{font-size:11px;color:var(--color-text-secondary);margin:0 0 3px}
+  .disc-input{width:100%;box-sizing:border-box;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:6px 8px;font-size:12px;background:var(--color-background-primary);color:var(--color-text-primary);margin-bottom:8px;font-family:var(--font-sans)}
+  .disc-select{width:100%;box-sizing:border-box;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:6px 8px;font-size:12px;background:var(--color-background-primary);color:var(--color-text-primary);margin-bottom:8px;font-family:var(--font-sans)}
+  .photo-btn{border:0.5px dashed var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px;text-align:center;font-size:11px;color:var(--color-text-tertiary);margin-bottom:8px;cursor:pointer}
+  .submit-btn{background:#185FA5;color:#E6F1FB;border:none;border-radius:var(--border-radius-md);padding:8px;width:100%;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-sans)}
+  .divider-label{font-size:10px;color:var(--color-text-tertiary);padding:4px 10px;text-align:center}
+</style>
+
+<h2 class="sr-only">Mobile UI mockup showing two screens: a job board overview and a stage execution screen with discrepancy logging</h2>
+
+<div class="screens-wrap">
+
+  <div>
+    <p class="screen-label">Screen 1 — Job board</p>
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <div>
+            <div class="topbar-title">Job board</div>
+            <div class="topbar-sub">Wed 20 May · 9 active</div>
+          </div>
+          <i class="ti ti-bell" style="font-size:18px;color:var(--color-text-secondary)" aria-hidden="true"></i>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat"><div class="stat-n">9</div><div class="stat-l">Active</div></div>
+          <div class="stat"><div class="stat-n" style="color:var(--color-text-warning)">3</div><div class="stat-l">Due soon</div></div>
+          <div class="stat"><div class="stat-n" style="color:var(--color-text-danger)">1</div><div class="stat-l">Overdue</div></div>
+        </div>
+
+        <div class="section-head">Overdue</div>
+
+        <div class="job-card">
+          <div class="jc-top">
+            <div>
+              <div class="jc-name">Air comp. cylinder</div>
+              <div class="jc-customer">Ingersoll Rand · Qty 50</div>
+            </div>
+            <span class="pill pill-red">Overdue</span>
+          </div>
+          <div class="jc-meta">
+            <span class="pill pill-blue">Honing</span>
+            <span class="due-warn"><i class="ti ti-clock" style="font-size:10px" aria-hidden="true"></i> 2 days ago</span>
+          </div>
+          <div class="stage-bar">
+            <div class="sb done"></div>
+            <div class="sb done"></div>
+            <div class="sb active"></div>
+            <div class="sb pending"></div>
+          </div>
+        </div>
+
+        <div class="section-head">Due today / tomorrow</div>
+
+        <div class="job-card">
+          <div class="jc-top">
+            <div>
+              <div class="jc-name">Hex bolt M12 × 60</div>
+              <div class="jc-customer">Leo Quip · Qty 200</div>
+            </div>
+            <span class="pill pill-amber">Today</span>
+          </div>
+          <div class="jc-meta">
+            <span class="pill pill-teal">Inspection</span>
+            <span class="due-warn"><i class="ti ti-alert-triangle" style="font-size:10px" aria-hidden="true"></i> 2 disc.</span>
+          </div>
+          <div class="stage-bar">
+            <div class="sb done"></div>
+            <div class="sb done"></div>
+            <div class="sb done"></div>
+            <div class="sb active"></div>
+            <div class="sb pending"></div>
+          </div>
+        </div>
+
+        <div class="job-card">
+          <div class="jc-top">
+            <div>
+              <div class="jc-name">Flange DN80 PN16</div>
+              <div class="jc-customer">Sunita Tools · Qty 12</div>
+            </div>
+            <span class="pill pill-amber">Tomorrow</span>
+          </div>
+          <div class="jc-meta">
+            <span class="pill pill-blue">OD Grinding</span>
+          </div>
+          <div class="stage-bar">
+            <div class="sb done"></div>
+            <div class="sb active"></div>
+            <div class="sb pending"></div>
+          </div>
+        </div>
+
+        <div class="section-head">In progress</div>
+
+        <div class="job-card">
+          <div class="jc-top">
+            <div>
+              <div class="jc-name">Aerospace shaft</div>
+              <div class="jc-customer">Jassubhai · Qty 5</div>
+            </div>
+            <span class="pill pill-green">On track</span>
+          </div>
+          <div class="jc-meta">
+            <span class="pill pill-gray">ID Grinding</span>
+            <span class="due-ok">Due 23 May</span>
+          </div>
+          <div class="stage-bar">
+            <div class="sb done"></div>
+            <div class="sb active"></div>
+            <div class="sb pending"></div>
+            <div class="sb pending"></div>
+            <div class="sb pending"></div>
+          </div>
+        </div>
+
+        <div class="fab">+ New order</div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="screen-label">Screen 2 — Stage execution + discrepancy</p>
+    <div class="phone">
+      <div class="screen">
+
+        <div class="back-row">
+          <i class="ti ti-arrow-left back-icon" aria-hidden="true"></i>
+          <div class="back-title">Air comp. cylinder</div>
+        </div>
+
+        <div class="order-info">
+          <div class="oi-row"><span class="oi-label">Customer</span><span class="oi-val">Ingersoll Rand</span></div>
+          <div class="oi-row"><span class="oi-label">Total qty</span><span class="oi-val">50 pcs</span></div>
+          <div class="oi-row"><span class="oi-label">Due</span><span class="oi-val" style="color:var(--color-text-danger)">18 May (overdue)</span></div>
+        </div>
+
+        <div class="section-head">Stages for this order</div>
+
+        <div class="stage-list-item">
+          <div class="sli-icon sli-done"><i class="ti ti-check" aria-hidden="true"></i></div>
+          <div class="sli-text">
+            <div class="sli-name">OD Grinding</div>
+            <div class="sli-sub">Done · 50 passed · Ramesh</div>
+          </div>
+        </div>
+
+        <div class="stage-list-item">
+          <div class="sli-icon sli-done"><i class="ti ti-check" aria-hidden="true"></i></div>
+          <div class="sli-text">
+            <div class="sli-name">ID Grinding</div>
+            <div class="sli-sub">Done · 48 passed · 2 disc.</div>
+          </div>
+          <span class="pill pill-amber">2 open</span>
+        </div>
+
+        <div class="stage-list-item" style="background:var(--color-background-info);border-radius:0">
+          <div class="sli-icon sli-active"><i class="ti ti-player-play" aria-hidden="true"></i></div>
+          <div class="sli-text">
+            <div class="sli-name" style="color:var(--color-text-info)">Honing <span style="font-size:10px;font-weight:400">(active)</span></div>
+            <div class="sli-sub">Qty in: 48 · Operator: Suresh</div>
+          </div>
+        </div>
+
+        <div class="stage-list-item">
+          <div class="sli-icon sli-pending"><i class="ti ti-clock" aria-hidden="true"></i></div>
+          <div class="sli-text">
+            <div class="sli-name">Final inspection</div>
+            <div class="sli-sub">Pending</div>
+          </div>
+        </div>
+
+        <div class="section-head">Mark outcome — Honing (48 pcs)</div>
+
+        <div class="qty-row">
+          <div class="qty-box"><div class="qty-n">48</div><div class="qty-l">In</div></div>
+          <div class="qty-box"><div class="qty-n" style="color:var(--color-text-success)">44</div><div class="qty-l">Passed</div></div>
+          <div class="qty-box"><div class="qty-n" style="color:var(--color-text-warning)">4</div><div class="qty-l">Pending</div></div>
+        </div>
+
+        <div class="action-row">
+          <div class="act-btn act-pass"><i class="ti ti-check" style="font-size:14px" aria-hidden="true"></i> Pass</div>
+          <div class="act-btn act-disc"><i class="ti ti-alert-triangle" style="font-size:14px" aria-hidden="true"></i> Discrepancy</div>
+        </div>
+        <div style="padding:0 10px 6px">
+          <div class="act-btn act-reject" style="text-align:center"><i class="ti ti-x" style="font-size:14px" aria-hidden="true"></i> Reject parts</div>
+        </div>
+
+        <div class="section-head">Log discrepancy</div>
+
+        <div class="disc-form">
+          <div class="disc-label">Qty affected</div>
+          <input class="disc-input" type="number" value="4" placeholder="How many parts?">
+          <div class="disc-label">What is the issue?</div>
+          <textarea class="disc-input" rows="2" placeholder="e.g. surface finish not meeting spec…">Surface bore diameter oversize by 0.02mm</textarea>
+          <div class="disc-label">Disposition</div>
+          <select class="disc-select">
+            <option>Under review</option>
+            <option>Resolved — rework</option>
+            <option>Rejected</option>
+          </select>
+          <div class="photo-btn"><i class="ti ti-camera" style="font-size:14px" aria-hidden="true"></i>  Attach photo (optional)</div>
+          <button class="submit-btn">Save discrepancy</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>

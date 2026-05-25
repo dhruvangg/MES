@@ -1,0 +1,447 @@
+
+<style>
+  *{box-sizing:border-box}
+  h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .phone-wrap{background:var(--color-background-secondary);border-radius:20px;padding:10px;max-width:360px;margin:0 auto;border:0.5px solid var(--color-border-tertiary)}
+  .screen{background:var(--color-background-primary);border-radius:14px;overflow:hidden;border:0.5px solid var(--color-border-tertiary)}
+  .topbar{padding:10px 12px 8px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;gap:8px;background:var(--color-background-primary)}
+  .topbar-title{font-size:14px;font-weight:500;color:var(--color-text-primary);flex:1}
+  .step-pills{display:flex;gap:4px;padding:8px 12px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary)}
+  .sp{flex:1;height:4px;border-radius:2px;background:var(--color-border-tertiary);transition:background .3s}
+  .sp.active{background:#378ADD}
+  .sp.done{background:#1D9E75}
+  .step-label{font-size:11px;color:var(--color-text-tertiary);text-align:center;padding:4px 12px 0}
+  .section{border-bottom:0.5px solid var(--color-border-tertiary)}
+  .sec-head{font-size:10px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.05em;padding:8px 12px 4px;background:var(--color-background-secondary)}
+  .field{padding:8px 12px}
+  .field label{display:block;font-size:11px;color:var(--color-text-secondary);margin-bottom:3px}
+  .field input,.field select,.field textarea{width:100%;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:7px 10px;font-size:13px;background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)}
+  .field textarea{resize:none}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 12px}
+  .row2 label{display:block;font-size:11px;color:var(--color-text-secondary);margin-bottom:3px}
+  .row2 input,.row2 select{width:100%;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:7px 8px;font-size:13px;background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)}
+  .stage-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 12px}
+  .stage-chip{border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:7px 10px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .15s;background:var(--color-background-primary)}
+  .stage-chip.sel{background:#E6F1FB;border-color:#378ADD;color:#0C447C}
+  .stage-chip .seq{font-size:10px;font-weight:500;background:#378ADD;color:#E6F1FB;border-radius:10px;padding:1px 6px;display:none}
+  .stage-chip.sel .seq{display:inline}
+  .workflow-preview{padding:8px 12px}
+  .wf-flow{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+  .wf-node{background:#E6F1FB;color:#0C447C;border-radius:var(--border-radius-md);padding:4px 8px;font-size:11px;font-weight:500;border:0.5px solid #85B7EB}
+  .wf-arrow{color:var(--color-text-tertiary);font-size:12px}
+  .wf-empty{font-size:12px;color:var(--color-text-tertiary);font-style:italic}
+  .parts-list{padding:0}
+  .part-row{padding:8px 12px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;gap:8px}
+  .part-info{flex:1;min-width:0}
+  .part-name{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+  .part-meta{font-size:11px;color:var(--color-text-tertiary);margin-top:1px}
+  .part-qty-badge{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:4px 8px;text-align:center;min-width:48px}
+  .pqb-n{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+  .pqb-l{font-size:9px;color:var(--color-text-tertiary)}
+  .part-del{font-size:16px;color:var(--color-text-tertiary);cursor:pointer;padding:4px}
+  .add-part-row{padding:8px 12px;display:flex;gap:6px}
+  .add-part-row input{flex:1;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:7px 8px;font-size:12px;background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)}
+  .add-part-row input.qty-inp{width:60px;flex:none}
+  .add-part-btn{background:#E6F1FB;border:0.5px solid #378ADD;border-radius:var(--border-radius-md);padding:7px 10px;font-size:12px;font-weight:500;color:#0C447C;cursor:pointer;white-space:nowrap}
+  .qty-tracker{padding:10px 12px}
+  .qt-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .qt-label{font-size:12px;color:var(--color-text-secondary)}
+  .qt-vals{display:flex;gap:8px}
+  .qt-val{text-align:center}
+  .qt-n{font-size:14px;font-weight:500}
+  .qt-l{font-size:10px;color:var(--color-text-tertiary)}
+  .n-green{color:#27500A} .n-amber{color:#633806} .n-red{color:#791F1F} .n-blue{color:#0C447C}
+  .move-section{padding:8px 12px;border-top:0.5px solid var(--color-border-tertiary)}
+  .move-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  .move-row label{font-size:11px;color:var(--color-text-secondary);width:60px;flex-shrink:0}
+  .move-row input,.move-row select{flex:1;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:6px 8px;font-size:12px;background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)}
+  .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 12px 6px}
+  .act{border-radius:var(--border-radius-md);padding:8px 6px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid}
+  .act-move{background:#E6F1FB;color:#0C447C;border-color:#85B7EB}
+  .act-di{background:#FAEEDA;color:#633806;border-color:#EF9F27}
+  .act-rework{background:#EEEDFE;color:#3C3489;border-color:#AFA9EC}
+  .act-reject{background:#FCEBEB;color:#791F1F;border-color:#F09595}
+  .di-form{padding:8px 12px;border-top:0.5px solid var(--color-border-tertiary)}
+  .di-form label{display:block;font-size:11px;color:var(--color-text-secondary);margin-bottom:3px;margin-top:7px}
+  .di-form input,.di-form select,.di-form textarea{width:100%;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:7px 8px;font-size:12px;background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)}
+  .di-form textarea{resize:none}
+  .photo-row{border:0.5px dashed var(--color-border-secondary);border-radius:var(--border-radius-md);padding:7px;text-align:center;font-size:11px;color:var(--color-text-tertiary);cursor:pointer;margin-top:7px}
+  .nav-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px}
+  .btn-back{border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:9px;text-align:center;font-size:13px;font-weight:500;color:var(--color-text-primary);cursor:pointer;background:var(--color-background-primary)}
+  .btn-next{background:#185FA5;border-radius:var(--border-radius-md);padding:9px;text-align:center;font-size:13px;font-weight:500;color:#E6F1FB;cursor:pointer;border:none}
+  .btn-submit{background:#1D9E75;border-radius:var(--border-radius-md);padding:9px;text-align:center;font-size:13px;font-weight:500;color:#E1F5EE;cursor:pointer;border:none;width:100%}
+  .toast{display:none;position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:#1D9E75;color:#E1F5EE;border-radius:var(--border-radius-md);padding:8px 16px;font-size:12px;font-weight:500;white-space:nowrap;z-index:10}
+  .toast.show{display:block}
+  .confirm-overlay{background:rgba(0,0,0,0.4);border-radius:14px;padding:40px 16px;display:flex;align-items:center;justify-content:center;min-height:300px}
+  .confirm-card{background:var(--color-background-primary);border-radius:var(--border-radius-lg);padding:16px;width:100%;border:0.5px solid var(--color-border-tertiary)}
+  .confirm-title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin:0 0 6px}
+  .confirm-sub{font-size:12px;color:var(--color-text-secondary);margin:0 0 14px;line-height:1.5}
+  .confirm-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .cb-cancel{border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px;text-align:center;font-size:12px;font-weight:500;color:var(--color-text-primary);cursor:pointer;background:var(--color-background-primary)}
+  .cb-confirm-red{background:#FCEBEB;border:0.5px solid #F09595;border-radius:var(--border-radius-md);padding:8px;text-align:center;font-size:12px;font-weight:500;color:#791F1F;cursor:pointer}
+  .cb-confirm-amber{background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:var(--border-radius-md);padding:8px;text-align:center;font-size:12px;font-weight:500;color:#633806;cursor:pointer}
+</style>
+
+<h2 class="sr-only">Interactive new order creation screen with stage workflow builder, parts management, quantity tracking, DI logging and reject flow</h2>
+
+<div style="position:relative">
+<div class="phone-wrap">
+  <div class="screen" id="main-screen">
+
+    <div class="topbar">
+      <i class="ti ti-arrow-left" style="font-size:18px;color:var(--color-text-secondary);cursor:pointer" aria-hidden="true" onclick="goBack()"></i>
+      <span class="topbar-title" id="topbar-title">New order</span>
+      <span style="font-size:12px;color:var(--color-text-tertiary)" id="step-indicator">Step 1 of 3</span>
+    </div>
+
+    <div class="step-pills">
+      <div class="sp active" id="sp1"></div>
+      <div class="sp" id="sp2"></div>
+      <div class="sp" id="sp3"></div>
+    </div>
+    <div class="step-label" id="step-label">Order details</div>
+
+    <div id="step1">
+      <div class="section">
+        <div class="sec-head">Customer &amp; order</div>
+        <div class="field"><label>Customer name</label><input type="text" value="Ingersoll Rand Ltd." id="customer"></div>
+        <div class="row2">
+          <div><label>Order no.</label><input type="text" value="ORD-2025-041" id="orderno"></div>
+          <div><label>Due date</label><input type="date" value="2025-06-10" id="duedate"></div>
+        </div>
+        <div class="field"><label>Notes (optional)</label><textarea rows="2" placeholder="Any special instructions…" id="notes"></textarea></div>
+      </div>
+
+      <div class="section">
+        <div class="sec-head">Select stages (tap to add, reorder by tapping in sequence)</div>
+        <div class="stage-grid" id="stage-grid">
+          <div class="stage-chip" data-stage="OD Grinding" onclick="toggleStage(this)"><span>OD Grinding</span><span class="seq"></span></div>
+          <div class="stage-chip" data-stage="ID Grinding" onclick="toggleStage(this)"><span>ID Grinding</span><span class="seq"></span></div>
+          <div class="stage-chip" data-stage="Honing" onclick="toggleStage(this)"><span>Honing</span><span class="seq"></span></div>
+          <div class="stage-chip sel" data-stage="Centreless Grinding" onclick="toggleStage(this)"><span>Centreless Grinding</span><span class="seq">1</span></div>
+          <div class="stage-chip sel" data-stage="Lapping" onclick="toggleStage(this)"><span>Lapping</span><span class="seq">2</span></div>
+          <div class="stage-chip" data-stage="Surface Grinding" onclick="toggleStage(this)"><span>Surface Grinding</span><span class="seq"></span></div>
+          <div class="stage-chip sel" data-stage="Inspection" onclick="toggleStage(this)"><span>Inspection</span><span class="seq">3</span></div>
+          <div class="stage-chip" data-stage="Deburring" onclick="toggleStage(this)"><span>Deburring</span><span class="seq"></span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-head">Workflow preview</div>
+        <div class="workflow-preview">
+          <div class="wf-flow" id="wf-preview">
+            <span class="wf-node">Centreless Grinding</span>
+            <span class="wf-arrow">→</span>
+            <span class="wf-node">Lapping</span>
+            <span class="wf-arrow">→</span>
+            <span class="wf-node">Inspection</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <div class="btn-back" onclick="goBack()">Cancel</div>
+        <div class="btn-next" onclick="goStep(2)">Next: Parts →</div>
+      </div>
+    </div>
+
+    <div id="step2" style="display:none">
+      <div class="section">
+        <div class="sec-head">Parts &amp; quantities</div>
+        <div class="parts-list" id="parts-list">
+          <div class="part-row" data-part="Air comp. cylinder" data-qty="50">
+            <div class="part-info">
+              <div class="part-name">Air comp. cylinder</div>
+              <div class="part-meta">Centreless Grinding → Lapping → Inspection</div>
+            </div>
+            <div class="part-qty-badge"><div class="pqb-n">50</div><div class="pqb-l">pcs</div></div>
+            <span class="part-del" onclick="removePart(this)" aria-label="Remove part"><i class="ti ti-trash" style="font-size:15px"></i></span>
+          </div>
+        </div>
+        <div class="add-part-row">
+          <input type="text" placeholder="Part name" id="new-part-name">
+          <input type="number" placeholder="Qty" class="qty-inp" id="new-part-qty" min="1">
+          <div class="add-part-btn" onclick="addPart()"><i class="ti ti-plus" style="font-size:13px" aria-hidden="true"></i> Add</div>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <div class="btn-back" onclick="goStep(1)">← Back</div>
+        <div class="btn-next" onclick="goStep(3)">Next: Execute →</div>
+      </div>
+    </div>
+
+    <div id="step3" style="display:none">
+      <div class="section">
+        <div class="sec-head">Active stage — Centreless Grinding</div>
+        <div class="qty-tracker">
+          <div class="qt-row">
+            <span class="qt-label">Air comp. cylinder</span>
+            <div class="qt-vals">
+              <div class="qt-val"><div class="qt-n n-blue" id="q-in">50</div><div class="qt-l">In</div></div>
+              <div class="qt-val"><div class="qt-n n-green" id="q-pass">38</div><div class="qt-l">Passed</div></div>
+              <div class="qt-val"><div class="qt-n n-amber" id="q-di">6</div><div class="qt-l">DI</div></div>
+              <div class="qt-val"><div class="qt-n n-red" id="q-rej">2</div><div class="qt-l">Rejected</div></div>
+            </div>
+          </div>
+          <div style="height:4px;background:var(--color-border-tertiary);border-radius:2px;overflow:hidden;margin-top:4px">
+            <div id="progress-bar" style="height:100%;width:76%;background:#1D9E75;border-radius:2px;transition:width .4s"></div>
+          </div>
+          <div style="font-size:10px;color:var(--color-text-tertiary);margin-top:3px" id="progress-label">38 of 50 processed · 4 remaining</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-head">Move qty to next stage</div>
+        <div class="move-section">
+          <div class="move-row">
+            <label>Qty</label>
+            <input type="number" value="5" min="1" id="move-qty" max="50">
+          </div>
+          <div class="move-row">
+            <label>To stage</label>
+            <select id="move-stage">
+              <option>Lapping (next)</option>
+              <option>Inspection (skip)</option>
+            </select>
+          </div>
+          <div class="action-grid">
+            <div class="act act-move" onclick="doMove()"><i class="ti ti-arrow-right" style="font-size:13px" aria-hidden="true"></i> Move qty</div>
+            <div class="act act-di" onclick="showPanel('di')"><i class="ti ti-alert-triangle" style="font-size:13px" aria-hidden="true"></i> Raise DI</div>
+            <div class="act act-rework" onclick="showPanel('rework')"><i class="ti ti-refresh" style="font-size:13px" aria-hidden="true"></i> Send rework</div>
+            <div class="act act-reject" onclick="showPanel('reject')"><i class="ti ti-x" style="font-size:13px" aria-hidden="true"></i> Reject parts</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="panel-di" style="display:none">
+        <div class="section">
+          <div class="sec-head">Raise discrepancy (DI)</div>
+          <div class="di-form">
+            <label>Qty affected</label>
+            <input type="number" value="6" min="1" id="di-qty">
+            <label>Discrepancy description</label>
+            <textarea rows="2" placeholder="Describe the issue…">Surface finish below Ra 0.4 spec</textarea>
+            <label>Disposition</label>
+            <select>
+              <option>Under review</option>
+              <option>Rework required</option>
+              <option>Accept as-is</option>
+              <option>Reject</option>
+            </select>
+            <label>Assigned to</label>
+            <select>
+              <option>Supervisor (Mahesh)</option>
+              <option>QC Inspector</option>
+              <option>Owner</option>
+            </select>
+            <div class="photo-row"><i class="ti ti-camera" style="font-size:14px" aria-hidden="true"></i>  Attach photo</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
+              <div class="btn-back" onclick="hidePanel('di')">Cancel</div>
+              <div class="btn-next" onclick="saveDI()" style="text-align:center;padding:9px">Save DI</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="panel-rework" style="display:none">
+        <div class="section">
+          <div class="sec-head">Send for rework</div>
+          <div class="di-form">
+            <label>Qty for rework</label>
+            <input type="number" value="6" min="1" id="rework-qty">
+            <label>Send back to stage</label>
+            <select>
+              <option>Centreless Grinding (current)</option>
+              <option>OD Grinding</option>
+            </select>
+            <label>Reason</label>
+            <textarea rows="2" placeholder="Why are these being reworked?">Dimension out of tolerance — re-grind needed</textarea>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
+              <div class="btn-back" onclick="hidePanel('rework')">Cancel</div>
+              <div class="act act-rework" style="text-align:center;padding:9px" onclick="saveRework()">Send for rework</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="panel-reject" style="display:none">
+        <div class="confirm-overlay">
+          <div class="confirm-card">
+            <p class="confirm-title"><i class="ti ti-alert-triangle" style="font-size:16px;color:#791F1F;vertical-align:-2px" aria-hidden="true"></i> Permanently reject parts?</p>
+            <p class="confirm-sub">This cannot be undone. Rejected parts will be removed from the order count and logged for records.</p>
+            <div class="di-form" style="padding:0 0 12px">
+              <label>Qty to reject</label>
+              <input type="number" value="2" min="1" id="rej-qty">
+              <label>Reason</label>
+              <textarea rows="2">Crack found during inspection — scrapped</textarea>
+            </div>
+            <div class="confirm-btns">
+              <div class="cb-cancel" onclick="hidePanel('reject')">Cancel</div>
+              <div class="cb-confirm-red" onclick="saveReject()">Reject permanently</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:10px 12px 12px">
+        <div class="btn-submit" onclick="submitOrder()">Submit order</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+  var stageOrder = ['Centreless Grinding','Lapping','Inspection'];
+  var stageSeq = {};
+  stageOrder.forEach(function(s,i){stageSeq[s]=i+1});
+
+  function toggleStage(el){
+    var stage = el.dataset.stage;
+    if(el.classList.contains('sel')){
+      el.classList.remove('sel');
+      el.querySelector('.seq').textContent='';
+      delete stageSeq[stage];
+      stageOrder = stageOrder.filter(function(s){return s!==stage});
+    } else {
+      el.classList.add('sel');
+      stageOrder.push(stage);
+      stageSeq[stage] = stageOrder.length;
+      el.querySelector('.seq').textContent = stageOrder.length;
+    }
+    updateAllSeq();
+    updatePreview();
+  }
+
+  function updateAllSeq(){
+    stageOrder.forEach(function(s,i){
+      var chips = document.querySelectorAll('.stage-chip');
+      chips.forEach(function(c){
+        if(c.dataset.stage===s) c.querySelector('.seq').textContent=i+1;
+      });
+    });
+  }
+
+  function updatePreview(){
+    var p = document.getElementById('wf-preview');
+    if(stageOrder.length===0){p.innerHTML='<span class="wf-empty">No stages selected yet</span>';return;}
+    var html='';
+    stageOrder.forEach(function(s,i){
+      html+='<span class="wf-node">'+s+'</span>';
+      if(i<stageOrder.length-1) html+='<span class="wf-arrow">→</span>';
+    });
+    p.innerHTML=html;
+  }
+
+  function addPart(){
+    var name=document.getElementById('new-part-name').value.trim();
+    var qty=parseInt(document.getElementById('new-part-qty').value)||0;
+    if(!name||qty<1){showToast('Enter part name and qty');return;}
+    var stages=stageOrder.join(' → ')||'No stages';
+    var row=document.createElement('div');
+    row.className='part-row';
+    row.dataset.part=name;
+    row.dataset.qty=qty;
+    row.innerHTML='<div class="part-info"><div class="part-name">'+name+'</div><div class="part-meta">'+stages+'</div></div><div class="part-qty-badge"><div class="pqb-n">'+qty+'</div><div class="pqb-l">pcs</div></div><span class="part-del" onclick="removePart(this)" aria-label="Remove part"><i class="ti ti-trash" style="font-size:15px"></i></span>';
+    document.getElementById('parts-list').appendChild(row);
+    document.getElementById('new-part-name').value='';
+    document.getElementById('new-part-qty').value='';
+    showToast('Part added');
+  }
+
+  function removePart(el){
+    el.closest('.part-row').remove();
+  }
+
+  var qPass=38,qDI=6,qRej=2,qIn=50;
+
+  function updateQtyDisplay(){
+    document.getElementById('q-in').textContent=qIn;
+    document.getElementById('q-pass').textContent=qPass;
+    document.getElementById('q-di').textContent=qDI;
+    document.getElementById('q-rej').textContent=qRej;
+    var pct=Math.round((qPass+qDI+qRej)/qIn*100);
+    var rem=qIn-qPass-qDI-qRej;
+    document.getElementById('progress-bar').style.width=Math.min(pct,100)+'%';
+    document.getElementById('progress-label').textContent=(qPass+qDI+qRej)+' of '+qIn+' processed · '+Math.max(rem,0)+' remaining';
+  }
+
+  function doMove(){
+    var qty=parseInt(document.getElementById('move-qty').value)||0;
+    var avail=qIn-qPass-qDI-qRej;
+    if(qty<1||qty>avail){showToast('Not enough qty available ('+avail+' left)');return;}
+    qPass+=qty;
+    updateQtyDisplay();
+    showToast(qty+' pcs moved to next stage');
+  }
+
+  function showPanel(p){
+    hideAllPanels();
+    document.getElementById('panel-'+p).style.display='block';
+  }
+  function hidePanel(p){document.getElementById('panel-'+p).style.display='none';}
+  function hideAllPanels(){['di','rework','reject'].forEach(function(p){document.getElementById('panel-'+p).style.display='none';});}
+
+  function saveDI(){
+    var qty=parseInt(document.getElementById('di-qty').value)||0;
+    var avail=qIn-qPass-qDI-qRej;
+    if(qty<1||qty>avail){showToast('Qty exceeds available');return;}
+    qDI+=qty;
+    updateQtyDisplay();
+    hidePanel('di');
+    showToast('DI raised for '+qty+' pcs');
+  }
+
+  function saveRework(){
+    var qty=parseInt(document.getElementById('rework-qty').value)||0;
+    var avail=qIn-qPass-qDI-qRej;
+    if(qty<1||qty>avail){showToast('Qty exceeds available');return;}
+    hidePanel('rework');
+    showToast(qty+' pcs sent for rework');
+  }
+
+  function saveReject(){
+    var qty=parseInt(document.getElementById('rej-qty').value)||0;
+    var avail=qIn-qPass-qDI-qRej;
+    if(qty<1||qty>avail){showToast('Qty exceeds available');return;}
+    qRej+=qty;
+    updateQtyDisplay();
+    hidePanel('reject');
+    showToast(qty+' pcs permanently rejected');
+  }
+
+  function goStep(n){
+    document.getElementById('step1').style.display=n===1?'block':'none';
+    document.getElementById('step2').style.display=n===2?'block':'none';
+    document.getElementById('step3').style.display=n===3?'block':'none';
+    ['sp1','sp2','sp3'].forEach(function(id,i){
+      var el=document.getElementById(id);
+      el.className='sp '+(i+1<n?'done':i+1===n?'active':'');
+    });
+    var labels=['Order details','Parts & quantities','Stage execution'];
+    var titles=['New order','Add parts','Execute — Centreless Grinding'];
+    document.getElementById('step-label').textContent=labels[n-1];
+    document.getElementById('topbar-title').textContent=titles[n-1];
+    document.getElementById('step-indicator').textContent='Step '+n+' of 3';
+    hideAllPanels();
+  }
+
+  function goBack(){
+    showToast('Back to job board');
+  }
+
+  function submitOrder(){
+    showToast('Order submitted!');
+    setTimeout(function(){sendPrompt('The new order screen looks great. What should the owner dashboard / summary view look like?');},1200);
+  }
+
+  function showToast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    setTimeout(function(){t.classList.remove('show');},2000);
+  }
+</script>
