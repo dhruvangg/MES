@@ -14,7 +14,7 @@ export default async function OperationsPage() {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
         {ops.length === 0 && <div className="p-8 text-center text-gray-400">No operations yet.</div>}
         <div className="divide-y divide-gray-100">
-          {ops.map(op => (
+          {ops.map((op: typeof ops[number]) => (
             <div key={op.id} className="flex items-center gap-3 px-4 py-3">
               <div className="w-9 h-9 rounded-xl bg-[#FAEEDA] flex items-center justify-center flex-shrink-0">
                 <Wrench size={16} className="text-[#633806]" />

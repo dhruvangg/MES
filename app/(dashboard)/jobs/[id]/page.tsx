@@ -84,7 +84,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         {job.notes && <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-3 py-2">{job.notes}</p>}
       </div>
 
-      {job.jobParts.map(jp => (
+      {job.jobParts.map((jp: typeof job.jobParts[number]) => (
         <div key={jp.id} className="bg-white rounded-xl border border-gray-200 mb-4 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
             <div className="flex items-center justify-between mb-2">
@@ -112,7 +112,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             </div>
           </div>
           <div className="divide-y divide-gray-100">
-            {jp.routingSteps.map(step => {
+            {jp.routingSteps.map((step: typeof jp.routingSteps[number]) => {
               const pending = stepPendingQty(step)
               const openDIs = step.discrepancyIssues.filter(d => d.disposition === 'UNDER_REVIEW').length
               // Steps are navigable if active/completed OR if they have open DIs needing resolution

@@ -134,7 +134,7 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
       </div>
 
       {/* Per-part report */}
-      {job.jobParts.map(jp => {
+      {job.jobParts.map((jp: typeof job.jobParts[number]) => {
         const totalRejected = jp.routingSteps.reduce((s, st) => s + st.qtyRejected, 0)
         const totalRework = jp.routingSteps.reduce((s, st) => s + st.qtyRework, 0)
         const yieldPct = jp.totalQty > 0
@@ -176,7 +176,7 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
 
             {/* Stage-by-stage breakdown */}
             <div className="divide-y divide-gray-100">
-              {jp.routingSteps.map(step => {
+              {jp.routingSteps.map((step: typeof jp.routingSteps[number]) => {
                 const pending = stepPendingQty(step)
                 const stageDIs = step.discrepancyIssues
                 const stageLogs = step.productionLogs
@@ -235,7 +235,7 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
                       <div className="mt-2 mb-2">
                         <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Activity log</div>
                         <div className="space-y-1">
-                          {stageLogs.map(log => {
+                          {stageLogs.map((log: typeof stageLogs[number]) => {
                             const ac = actionColors[log.action] ?? { bg: '#F1EFE8', text: '#5F5E5A', label: log.action }
                             return (
                               <div key={log.id} className="flex items-center gap-2 text-xs">
@@ -259,7 +259,7 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
                           Discrepancy Issues ({stageDIs.length})
                         </div>
                         <div className="divide-y divide-[#EF9F27]/20">
-                          {stageDIs.map(di => {
+                          {stageDIs.map((di: typeof stageDIs[number]) => {
                             const dc = dispColors[di.disposition] ?? { bg: '#F1EFE8', text: '#5F5E5A' }
                             return (
                               <div key={di.id} className="px-3 py-2">

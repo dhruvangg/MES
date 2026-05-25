@@ -14,7 +14,7 @@ export default async function PartsPage() {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
         {parts.length === 0 && <div className="p-8 text-center text-gray-400">No parts yet.</div>}
         <div className="divide-y divide-gray-100">
-          {parts.map(p => (
+          {parts.map((p: typeof parts[number]) => (
             <div key={p.id} className="flex items-center gap-3 px-4 py-3">
               <div className="w-9 h-9 rounded-xl bg-[#EEEDFE] flex items-center justify-center flex-shrink-0">
                 <Package size={16} className="text-[#3C3489]" />
