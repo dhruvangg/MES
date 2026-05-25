@@ -1,11 +1,9 @@
 // app/(dashboard)/customers/page.tsx
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
 import { Users, Plus } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-type CustomerRow = Prisma.CustomerGetPayload<{ include: { _count: { select: { jobs: true } } } }>
 
 export default async function CustomersPage() {
   const customers = await prisma.customer.findMany({ orderBy: { name: 'asc' }, include: { _count: { select: { jobs: true } } } })
@@ -21,7 +19,7 @@ export default async function CustomersPage() {
           <div className="p-8 text-center text-gray-400">No customers yet.</div>
         )}
         <div className="divide-y divide-gray-100">
-          {customers.map((c: CustomerRow) => (
+          {customers.map((c: typeof customers[number]) => (
             <div key={c.id} className="flex items-center gap-3 px-4 py-3">
               <div className="w-9 h-9 rounded-xl bg-[#E6F1FB] flex items-center justify-center flex-shrink-0">
                 <Users size={16} className="text-[#0C447C]" />
