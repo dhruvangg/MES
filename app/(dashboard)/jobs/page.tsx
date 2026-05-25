@@ -9,6 +9,19 @@ import type { JobListItemDTO } from '@/types'
 
 export const dynamic = 'force-dynamic'
 
+// ── Derived types ─────────────────────────────────────────────────────────────
+type ActiveJobRow  = Awaited<ReturnType<typeof prisma.job.findMany<{
+  where: { status: { in: ['ACTIVE', 'DRAFT'] } }
+  include: {
+    customer: { select: { name: true } }
+    jobParts: { include: { routingSteps: { include: { operation: { select: { name: true } } }, orderBy: { sequence: 'asc' } } } }
+  }
+}>>>[number]
+
+type HistoryJobRow = Awaited<ReturnType<typeof getHistoryJobs>>[number]
+
+// ── Data fetchers ─────────────────────────────────────────────────────────────
+
 async function getActiveJobs(): Promise<JobListItemDTO[]> {
   const jobs = await prisma.job.findMany({
     where: { status: { in: ['ACTIVE', 'DRAFT'] } },
@@ -26,7 +39,7 @@ async function getActiveJobs(): Promise<JobListItemDTO[]> {
     orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
   })
 
-  return jobs.map(job => {
+  return jobs.map((job: ActiveJobRow) => {
     const allSteps = job.jobParts.flatMap(p => p.routingSteps)
     const activeStep = allSteps.find(s => s.status === 'IN_PROGRESS')
     return {
@@ -60,6 +73,8 @@ async function getHistoryJobs() {
     orderBy: { updatedAt: 'desc' },
   })
 }
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function JobsPage({
   searchParams,
@@ -95,13 +110,8 @@ export default async function JobsPage({
         </Link>
       </div>
 
-      {isHistory ? (
-        <HistoryView />
-      ) : (
-        <ActiveView />
-      )}
+      {isHistory ? <HistoryView /> : <ActiveView />}
 
-      {/* FAB — only on active tab */}
       {!isHistory && (
         <Link
           href="/jobs/new"
@@ -115,17 +125,19 @@ export default async function JobsPage({
   )
 }
 
+// ── Sub-views ─────────────────────────────────────────────────────────────────
+
 async function ActiveView() {
   const jobs = await getActiveJobs()
 
-  const overdue = jobs.filter(j => j.delayStatus === 'overdue')
-  const dueSoon = jobs.filter(j => j.delayStatus === 'due-today' || j.delayStatus === 'due-tomorrow')
-  const inProgress = jobs.filter(j => j.delayStatus === 'on-track')
+  const overdue    = jobs.filter((j: JobListItemDTO) => j.delayStatus === 'overdue')
+  const dueSoon    = jobs.filter((j: JobListItemDTO) => j.delayStatus === 'due-today' || j.delayStatus === 'due-tomorrow')
+  const inProgress = jobs.filter((j: JobListItemDTO) => j.delayStatus === 'on-track')
 
   const stats = [
-    { label: 'Active', value: jobs.length, color: 'text-gray-900' },
-    { label: 'Due soon', value: dueSoon.length, color: 'text-[#633806]' },
-    { label: 'Overdue', value: overdue.length, color: 'text-[#791F1F]' },
+    { label: 'Active',   value: jobs.length,       color: 'text-gray-900' },
+    { label: 'Due soon', value: dueSoon.length,     color: 'text-[#633806]' },
+    { label: 'Overdue',  value: overdue.length,     color: 'text-[#791F1F]' },
   ]
 
   return (
@@ -142,21 +154,21 @@ async function ActiveView() {
       {overdue.length > 0 && (
         <section className="mb-4">
           <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2 px-1">Overdue</div>
-          <div className="space-y-2">{overdue.map(job => <JobCard key={job.id} job={job} />)}</div>
+          <div className="space-y-2">{overdue.map((job: JobListItemDTO) => <JobCard key={job.id} job={job} />)}</div>
         </section>
       )}
 
       {dueSoon.length > 0 && (
         <section className="mb-4">
           <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2 px-1">Due today / tomorrow</div>
-          <div className="space-y-2">{dueSoon.map(job => <JobCard key={job.id} job={job} />)}</div>
+          <div className="space-y-2">{dueSoon.map((job: JobListItemDTO) => <JobCard key={job.id} job={job} />)}</div>
         </section>
       )}
 
       {inProgress.length > 0 && (
         <section className="mb-4">
           <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2 px-1">In progress</div>
-          <div className="space-y-2">{inProgress.map(job => <JobCard key={job.id} job={job} />)}</div>
+          <div className="space-y-2">{inProgress.map((job: JobListItemDTO) => <JobCard key={job.id} job={job} />)}</div>
         </section>
       )}
 
@@ -183,8 +195,8 @@ async function HistoryView() {
     )
   }
 
-  const completed = jobs.filter(j => j.status === 'COMPLETED')
-  const cancelled = jobs.filter(j => j.status === 'CANCELLED')
+  const completed = jobs.filter((j: HistoryJobRow) => j.status === 'COMPLETED')
+  const cancelled = jobs.filter((j: HistoryJobRow) => j.status === 'CANCELLED')
 
   return (
     <>
@@ -194,7 +206,7 @@ async function HistoryView() {
             Completed · {completed.length}
           </div>
           <div className="space-y-2">
-            {completed.map(job => {
+            {completed.map((job: HistoryJobRow) => {
               const allSteps = job.jobParts.flatMap(p => p.routingSteps)
               return (
                 <Link key={job.id} href={`/jobs/${job.id}`} className="block">
@@ -230,7 +242,7 @@ async function HistoryView() {
             Cancelled · {cancelled.length}
           </div>
           <div className="space-y-2">
-            {cancelled.map(job => (
+            {cancelled.map((job: HistoryJobRow) => (
               <Link key={job.id} href={`/jobs/${job.id}`} className="block">
                 <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow active:scale-[0.99] opacity-70">
                   <div className="flex items-start justify-between gap-2 mb-1">
@@ -259,4 +271,3 @@ async function HistoryView() {
     </>
   )
 }
-
