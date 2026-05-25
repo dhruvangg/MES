@@ -142,8 +142,8 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
 
       {/* Per-part report */}
       {job.jobParts.map((jp: JobPart) => {
-        const totalRejected = jp.routingSteps.reduce((s, st) => s + st.qtyRejected, 0)
-        const totalRework = jp.routingSteps.reduce((s, st) => s + st.qtyRework, 0)
+        const totalRejected = jp.routingSteps.reduce((s: number, st) => s + st.qtyRejected, 0)
+        const totalRework = jp.routingSteps.reduce((s: number, st) => s + st.qtyRework, 0)
         const yieldPct = jp.totalQty > 0
           ? Math.round(((jp.totalQty - totalRejected) / jp.totalQty) * 100)
           : 100

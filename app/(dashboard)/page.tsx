@@ -25,8 +25,8 @@ async function getDashboardStats() {
   }).length
 
   const allParts = jobs.flatMap(j => j.jobParts)
-  const totalRejections = allParts.reduce((s, p) => s + p.rejectedQty, 0)
-  const totalReworks = allParts.reduce((s, p) => s + p.reworkQty, 0)
+  const totalRejections = allParts.reduce((s: number, p) => s + p.rejectedQty, 0)
+  const totalReworks = allParts.reduce((s: number, p) => s + p.reworkQty, 0)
 
   const opQty: Record<string, { name: string; qty: number }> = {}
   for (const step of steps) {
