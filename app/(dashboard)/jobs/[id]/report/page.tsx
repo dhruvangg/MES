@@ -69,10 +69,10 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
   const delay = getJobDelayStatus(job.dueDate, job.status)
 
   const allSteps: RoutingStep[] = job.jobParts.flatMap((p: JobPart) => p.routingSteps)
-  const totalDIs = allSteps.reduce((s: number, step) => s + step.discrepancyIssues.length, 0)
-  const openDIs = allSteps.reduce((s: number, step) => s + step.discrepancyIssues.filter((d: DI) => d.disposition === 'UNDER_REVIEW').length, 0)
-  const totalLogs = allSteps.reduce((s: number, step) => s + step.productionLogs.length, 0)
-  const stepsComplete = allSteps.filter(s => s.status === 'COMPLETED').length
+  const totalDIs = allSteps.reduce((s: number, step: RoutingStep) => s + step.discrepancyIssues.length, 0)
+  const openDIs = allSteps.reduce((s: number, step: RoutingStep) => s + step.discrepancyIssues.filter((d: DI) => d.disposition === 'UNDER_REVIEW').length, 0)
+  const totalLogs = allSteps.reduce((s: number, step: RoutingStep) => s + step.productionLogs.length, 0)
+  const stepsComplete = allSteps.filter((s: RoutingStep) => s.status === 'COMPLETED').length
 
   return (
     <div className="p-4 pb-24 md:pb-6 max-w-2xl mx-auto">
@@ -142,8 +142,8 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
 
       {/* Per-part report */}
       {job.jobParts.map((jp: JobPart) => {
-        const totalRejected = jp.routingSteps.reduce((s: number, st) => s + st.qtyRejected, 0)
-        const totalRework = jp.routingSteps.reduce((s: number, st) => s + st.qtyRework, 0)
+        const totalRejected = jp.routingSteps.reduce((s: number, st: RoutingStep) => s + st.qtyRejected, 0)
+        const totalRework = jp.routingSteps.reduce((s: number, st: RoutingStep) => s + st.qtyRework, 0)
         const yieldPct = jp.totalQty > 0
           ? Math.round(((jp.totalQty - totalRejected) / jp.totalQty) * 100)
           : 100
