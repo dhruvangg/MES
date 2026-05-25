@@ -74,9 +74,9 @@ export default async function DashboardPage() {
           </div>
           <div className="flex items-center justify-between">
             <span className="pill-warn text-sm font-semibold px-3 py-1.5 rounded-full">
-              {stats.bottleneck.operationName}
+              {stats.bottleneck.name}
             </span>
-            <span className="text-2xl font-bold text-[#633806]">{stats.bottleneck.pendingQty} <span className="text-sm font-normal text-gray-400">pcs pending</span></span>
+            <span className="text-2xl font-bold text-[#633806]">{stats.bottleneck.qty} <span className="text-sm font-normal text-gray-400">pcs pending</span></span>
           </div>
         </div>
       )}
