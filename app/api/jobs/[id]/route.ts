@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server'
 
 export async function GET(
   _req: NextRequest,
-  ctx: RouteContext<'/api/jobs/[id]'>
+  ctx: { params: Promise<{ id: string }> }
 ) {
   await requireAuth()
   const { id } = await ctx.params
@@ -87,7 +87,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  ctx: RouteContext<'/api/jobs/[id]'>
+  ctx: { params: Promise<{ id: string }> }
 ) {
   await requireAuth()
   const { id } = await ctx.params
@@ -108,7 +108,7 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  ctx: RouteContext<'/api/jobs/[id]'>
+  ctx: { params: Promise<{ id: string }> }
 ) {
   await requireAuth()
   const { id } = await ctx.params
