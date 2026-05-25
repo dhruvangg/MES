@@ -45,9 +45,10 @@ async function fetchHistoryJobs() {
 }
 
 // ── Derived types (always accurate — sourced from actual query shape) ─────────
-type ActiveJobRow  = Awaited<ReturnType<typeof fetchActiveJobs>>[number]
-type ActiveJobPart = ActiveJobRow['jobParts'][number]
-type HistoryJobRow = Awaited<ReturnType<typeof fetchHistoryJobs>>[number]
+type ActiveJobRow      = Awaited<ReturnType<typeof fetchActiveJobs>>[number]
+type ActiveJobPart     = ActiveJobRow['jobParts'][number]
+type ActiveRoutingStep = ActiveJobPart['routingSteps'][number]
+type HistoryJobRow     = Awaited<ReturnType<typeof fetchHistoryJobs>>[number]
 
 // ── Data mappers ──────────────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ async function getActiveJobs(): Promise<JobListItemDTO[]> {
 
   return jobs.map((job: ActiveJobRow) => {
     const allSteps = job.jobParts.flatMap((p: ActiveJobPart) => p.routingSteps)
-    const activeStep = allSteps.find(s => s.status === 'IN_PROGRESS')
+    const activeStep = allSteps.find((s: ActiveRoutingStep) => s.status === 'IN_PROGRESS')
     return {
       id: job.id,
       jobNumber: job.jobNumber,
@@ -69,7 +70,7 @@ async function getActiveJobs(): Promise<JobListItemDTO[]> {
       totalParts: job.jobParts.length,
       activeOperation: activeStep?.operation.name ?? null,
       stepsTotal: allSteps.length,
-      stepsDone: allSteps.filter(s => s.status === 'COMPLETED').length,
+      stepsDone: allSteps.filter((s: ActiveRoutingStep) => s.status === 'COMPLETED').length,
     }
   })
 }
