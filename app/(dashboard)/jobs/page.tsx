@@ -9,21 +9,10 @@ import type { JobListItemDTO } from '@/types'
 
 export const dynamic = 'force-dynamic'
 
-// ── Derived types ─────────────────────────────────────────────────────────────
-type ActiveJobRow  = Awaited<ReturnType<typeof prisma.job.findMany<{
-  where: { status: { in: ['ACTIVE', 'DRAFT'] } }
-  include: {
-    customer: { select: { name: true } }
-    jobParts: { include: { routingSteps: { include: { operation: { select: { name: true } } }, orderBy: { sequence: 'asc' } } } }
-  }
-}>>>[number]
+// ── Raw DB fetchers (types derived from these) ────────────────────────────────
 
-type HistoryJobRow = Awaited<ReturnType<typeof getHistoryJobs>>[number]
-
-// ── Data fetchers ─────────────────────────────────────────────────────────────
-
-async function getActiveJobs(): Promise<JobListItemDTO[]> {
-  const jobs = await prisma.job.findMany({
+async function fetchActiveJobs() {
+  return prisma.job.findMany({
     where: { status: { in: ['ACTIVE', 'DRAFT'] } },
     include: {
       customer: { select: { name: true } },
@@ -38,9 +27,35 @@ async function getActiveJobs(): Promise<JobListItemDTO[]> {
     },
     orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
   })
+}
+
+async function fetchHistoryJobs() {
+  return prisma.job.findMany({
+    where: { status: { in: ['COMPLETED', 'CANCELLED'] } },
+    include: {
+      customer: { select: { name: true } },
+      jobParts: {
+        include: {
+          routingSteps: { select: { status: true } },
+        },
+      },
+    },
+    orderBy: { updatedAt: 'desc' },
+  })
+}
+
+// ── Derived types (always accurate — sourced from actual query shape) ─────────
+type ActiveJobRow  = Awaited<ReturnType<typeof fetchActiveJobs>>[number]
+type ActiveJobPart = ActiveJobRow['jobParts'][number]
+type HistoryJobRow = Awaited<ReturnType<typeof fetchHistoryJobs>>[number]
+
+// ── Data mappers ──────────────────────────────────────────────────────────────
+
+async function getActiveJobs(): Promise<JobListItemDTO[]> {
+  const jobs = await fetchActiveJobs()
 
   return jobs.map((job: ActiveJobRow) => {
-    const allSteps = job.jobParts.flatMap(p => p.routingSteps)
+    const allSteps = job.jobParts.flatMap((p: ActiveJobPart) => p.routingSteps)
     const activeStep = allSteps.find(s => s.status === 'IN_PROGRESS')
     return {
       id: job.id,
@@ -56,21 +71,6 @@ async function getActiveJobs(): Promise<JobListItemDTO[]> {
       stepsTotal: allSteps.length,
       stepsDone: allSteps.filter(s => s.status === 'COMPLETED').length,
     }
-  })
-}
-
-async function getHistoryJobs() {
-  return prisma.job.findMany({
-    where: { status: { in: ['COMPLETED', 'CANCELLED'] } },
-    include: {
-      customer: { select: { name: true } },
-      jobParts: {
-        include: {
-          routingSteps: { select: { status: true } },
-        },
-      },
-    },
-    orderBy: { updatedAt: 'desc' },
   })
 }
 
@@ -135,9 +135,9 @@ async function ActiveView() {
   const inProgress = jobs.filter((j: JobListItemDTO) => j.delayStatus === 'on-track')
 
   const stats = [
-    { label: 'Active',   value: jobs.length,       color: 'text-gray-900' },
-    { label: 'Due soon', value: dueSoon.length,     color: 'text-[#633806]' },
-    { label: 'Overdue',  value: overdue.length,     color: 'text-[#791F1F]' },
+    { label: 'Active',   value: jobs.length,     color: 'text-gray-900' },
+    { label: 'Due soon', value: dueSoon.length,   color: 'text-[#633806]' },
+    { label: 'Overdue',  value: overdue.length,   color: 'text-[#791F1F]' },
   ]
 
   return (
@@ -183,7 +183,7 @@ async function ActiveView() {
 }
 
 async function HistoryView() {
-  const jobs = await getHistoryJobs()
+  const jobs = await fetchHistoryJobs()
 
   if (jobs.length === 0) {
     return (
