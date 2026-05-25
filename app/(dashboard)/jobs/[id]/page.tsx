@@ -48,6 +48,12 @@ const statusBg: Record<string, string> = {
   ON_HOLD: 'bg-[#FAEEDA]',
 }
 
+// ── Derived types from Prisma query ──────────────────────────────────────────
+type JobDetail   = NonNullable<Awaited<ReturnType<typeof getJob>>>
+type JobPart     = JobDetail['jobParts'][number]
+type RoutingStep = JobPart['routingSteps'][number]
+type DI          = RoutingStep['discrepancyIssues'][number]
+
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const job = await getJob(id)
@@ -84,7 +90,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         {job.notes && <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-3 py-2">{job.notes}</p>}
       </div>
 
-      {job.jobParts.map((jp: typeof job.jobParts[number]) => (
+      {job.jobParts.map((jp: JobPart) => (
         <div key={jp.id} className="bg-white rounded-xl border border-gray-200 mb-4 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
             <div className="flex items-center justify-between mb-2">
@@ -112,9 +118,9 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             </div>
           </div>
           <div className="divide-y divide-gray-100">
-            {jp.routingSteps.map((step: typeof jp.routingSteps[number]) => {
+            {jp.routingSteps.map((step: RoutingStep) => {
               const pending = stepPendingQty(step)
-              const openDIs = step.discrepancyIssues.filter((d: typeof step.discrepancyIssues[number]) => d.disposition === 'UNDER_REVIEW').length
+              const openDIs = step.discrepancyIssues.filter((d: DI) => d.disposition === 'UNDER_REVIEW').length
               // Steps are navigable if active/completed OR if they have open DIs needing resolution
               const canNavigate = step.status !== 'PENDING' || openDIs > 0
               const inner = (

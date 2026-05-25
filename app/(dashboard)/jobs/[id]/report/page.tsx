@@ -56,16 +56,23 @@ const dispColors: Record<string, { bg: string; text: string }> = {
   ACCEPTED_AS_IS: { bg: '#EAF3DE', text: '#27500A' },
 }
 
+// ── Derived types from Prisma query ──────────────────────────────────────────
+type JobReport   = NonNullable<Awaited<ReturnType<typeof getJobReport>>>
+type JobPart     = JobReport['jobParts'][number]
+type RoutingStep = JobPart['routingSteps'][number]
+type Log         = RoutingStep['productionLogs'][number]
+type DI          = RoutingStep['discrepancyIssues'][number]
+
 export default async function JobReportPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const job = await getJobReport(id)
   const delay = getJobDelayStatus(job.dueDate, job.status)
 
-  const allSteps = job.jobParts.flatMap(p => p.routingSteps)
-  const totalDIs = allSteps.reduce((s, step) => s + step.discrepancyIssues.length, 0)
-  const openDIs = allSteps.reduce((s, step) => s + step.discrepancyIssues.filter((d: typeof step.discrepancyIssues[number]) => d.disposition === 'UNDER_REVIEW').length, 0)
-  const totalLogs = allSteps.reduce((s, step) => s + step.productionLogs.length, 0)
-  const stepsComplete = allSteps.filter(s => s.status === 'COMPLETED').length
+  const allSteps = job.jobParts.flatMap((p: JobPart) => p.routingSteps)
+  const totalDIs = allSteps.reduce((s, step: RoutingStep) => s + step.discrepancyIssues.length, 0)
+  const openDIs = allSteps.reduce((s, step: RoutingStep) => s + step.discrepancyIssues.filter((d: DI) => d.disposition === 'UNDER_REVIEW').length, 0)
+  const totalLogs = allSteps.reduce((s, step: RoutingStep) => s + step.productionLogs.length, 0)
+  const stepsComplete = allSteps.filter((s: RoutingStep) => s.status === 'COMPLETED').length
 
   return (
     <div className="p-4 pb-24 md:pb-6 max-w-2xl mx-auto">
@@ -134,7 +141,7 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
       </div>
 
       {/* Per-part report */}
-      {job.jobParts.map((jp: typeof job.jobParts[number]) => {
+      {job.jobParts.map((jp: JobPart) => {
         const totalRejected = jp.routingSteps.reduce((s, st) => s + st.qtyRejected, 0)
         const totalRework = jp.routingSteps.reduce((s, st) => s + st.qtyRework, 0)
         const yieldPct = jp.totalQty > 0
@@ -176,7 +183,7 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
 
             {/* Stage-by-stage breakdown */}
             <div className="divide-y divide-gray-100">
-              {jp.routingSteps.map((step: typeof jp.routingSteps[number]) => {
+              {jp.routingSteps.map((step: RoutingStep) => {
                 const pending = stepPendingQty(step)
                 const stageDIs = step.discrepancyIssues
                 const stageLogs = step.productionLogs
@@ -235,7 +242,7 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
                       <div className="mt-2 mb-2">
                         <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Activity log</div>
                         <div className="space-y-1">
-                          {stageLogs.map((log: typeof stageLogs[number]) => {
+                          {stageLogs.map((log: Log) => {
                             const ac = actionColors[log.action] ?? { bg: '#F1EFE8', text: '#5F5E5A', label: log.action }
                             return (
                               <div key={log.id} className="flex items-center gap-2 text-xs">
@@ -259,7 +266,7 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
                           Discrepancy Issues ({stageDIs.length})
                         </div>
                         <div className="divide-y divide-[#EF9F27]/20">
-                          {stageDIs.map((di: typeof stageDIs[number]) => {
+                          {stageDIs.map((di: DI) => {
                             const dc = dispColors[di.disposition] ?? { bg: '#F1EFE8', text: '#5F5E5A' }
                             return (
                               <div key={di.id} className="px-3 py-2">
