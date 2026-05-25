@@ -63,7 +63,7 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
 
   const allSteps = job.jobParts.flatMap(p => p.routingSteps)
   const totalDIs = allSteps.reduce((s, step) => s + step.discrepancyIssues.length, 0)
-  const openDIs = allSteps.reduce((s, step) => s + step.discrepancyIssues.filter(d => d.disposition === 'UNDER_REVIEW').length, 0)
+  const openDIs = allSteps.reduce((s, step) => s + step.discrepancyIssues.filter((d: typeof step.discrepancyIssues[number]) => d.disposition === 'UNDER_REVIEW').length, 0)
   const totalLogs = allSteps.reduce((s, step) => s + step.productionLogs.length, 0)
   const stepsComplete = allSteps.filter(s => s.status === 'COMPLETED').length
 

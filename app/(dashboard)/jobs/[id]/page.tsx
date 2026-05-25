@@ -114,7 +114,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           <div className="divide-y divide-gray-100">
             {jp.routingSteps.map((step: typeof jp.routingSteps[number]) => {
               const pending = stepPendingQty(step)
-              const openDIs = step.discrepancyIssues.filter(d => d.disposition === 'UNDER_REVIEW').length
+              const openDIs = step.discrepancyIssues.filter((d: typeof step.discrepancyIssues[number]) => d.disposition === 'UNDER_REVIEW').length
               // Steps are navigable if active/completed OR if they have open DIs needing resolution
               const canNavigate = step.status !== 'PENDING' || openDIs > 0
               const inner = (
