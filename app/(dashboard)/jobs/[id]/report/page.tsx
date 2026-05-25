@@ -68,11 +68,11 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
   const job = await getJobReport(id)
   const delay = getJobDelayStatus(job.dueDate, job.status)
 
-  const allSteps = job.jobParts.flatMap((p: JobPart) => p.routingSteps)
-  const totalDIs = allSteps.reduce((s, step: RoutingStep) => s + step.discrepancyIssues.length, 0)
-  const openDIs = allSteps.reduce((s, step: RoutingStep) => s + step.discrepancyIssues.filter((d: DI) => d.disposition === 'UNDER_REVIEW').length, 0)
-  const totalLogs = allSteps.reduce((s, step: RoutingStep) => s + step.productionLogs.length, 0)
-  const stepsComplete = allSteps.filter((s: RoutingStep) => s.status === 'COMPLETED').length
+  const allSteps: RoutingStep[] = job.jobParts.flatMap((p: JobPart) => p.routingSteps)
+  const totalDIs = allSteps.reduce((s: number, step) => s + step.discrepancyIssues.length, 0)
+  const openDIs = allSteps.reduce((s: number, step) => s + step.discrepancyIssues.filter((d: DI) => d.disposition === 'UNDER_REVIEW').length, 0)
+  const totalLogs = allSteps.reduce((s: number, step) => s + step.productionLogs.length, 0)
+  const stepsComplete = allSteps.filter(s => s.status === 'COMPLETED').length
 
   return (
     <div className="p-4 pb-24 md:pb-6 max-w-2xl mx-auto">
