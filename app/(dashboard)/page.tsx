@@ -5,36 +5,48 @@ import { LayoutDashboard, AlertTriangle, CheckCircle, RefreshCw, AlertCircle, Tr
 
 export const dynamic = 'force-dynamic'
 
+async function fetchDashboardJobs() {
+  return prisma.job.findMany({
+    where: { status: { in: ['ACTIVE', 'DRAFT'] } },
+    include: { jobParts: true },
+  })
+}
+
+async function fetchDashboardSteps() {
+  return prisma.routingStep.findMany({
+    where: { status: 'IN_PROGRESS' },
+    include: { operation: { select: { name: true } } },
+  })
+}
+
+type DashboardJobRow  = Awaited<ReturnType<typeof fetchDashboardJobs>>[number]
+type DashboardJobPart = DashboardJobRow['jobParts'][number]
+type DashboardStep    = Awaited<ReturnType<typeof fetchDashboardSteps>>[number]
+
 async function getDashboardStats() {
   const [jobs, openDIs, steps] = await Promise.all([
-    prisma.job.findMany({
-      where: { status: { in: ['ACTIVE', 'DRAFT'] } },
-      include: { jobParts: true },
-    }),
+    fetchDashboardJobs(),
     prisma.discrepancyIssue.count({ where: { disposition: 'UNDER_REVIEW' } }),
-    prisma.routingStep.findMany({
-      where: { status: 'IN_PROGRESS' },
-      include: { operation: { select: { name: true } } },
-    }),
+    fetchDashboardSteps(),
   ])
 
   const activeJobs = jobs.length
-  const delayedJobs = jobs.filter(j => {
+  const delayedJobs = jobs.filter((j: DashboardJobRow) => {
     const s = getJobDelayStatus(j.dueDate, j.status)
     return s === 'overdue' || s === 'due-today'
   }).length
 
-  const allParts = jobs.flatMap(j => j.jobParts)
-  const totalRejections = allParts.reduce((s: number, p) => s + p.rejectedQty, 0)
-  const totalReworks = allParts.reduce((s: number, p) => s + p.reworkQty, 0)
+  const allParts = jobs.flatMap((j: DashboardJobRow) => j.jobParts)
+  const totalRejections = allParts.reduce((s: number, p: DashboardJobPart) => s + p.rejectedQty, 0)
+  const totalReworks = allParts.reduce((s: number, p: DashboardJobPart) => s + p.reworkQty, 0)
 
   const opQty: Record<string, { name: string; qty: number }> = {}
-  for (const step of steps) {
+  for (const step of steps as DashboardStep[]) {
     const pending = Math.max(0, step.qtyIn - step.qtyPassed - step.qtyRework - step.qtyRejected)
     if (!opQty[step.operationId]) opQty[step.operationId] = { name: step.operation.name, qty: 0 }
     opQty[step.operationId].qty += pending
   }
-  const bottleneck = Object.values(opQty).sort((a, b) => b.qty - a.qty)[0] ?? null
+  const bottleneck = Object.values(opQty).sort((a: { name: string; qty: number }, b: { name: string; qty: number }) => b.qty - a.qty)[0] ?? null
 
   return { activeJobs, delayedJobs, totalRejections, totalReworks, openDIs, bottleneck }
 }

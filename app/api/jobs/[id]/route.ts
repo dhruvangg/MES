@@ -4,14 +4,9 @@ import { requireAuth } from '@/lib/auth'
 import { getJobDelayStatus, stepPendingQty } from '@/lib/qty'
 import type { NextRequest } from 'next/server'
 
-export async function GET(
-  _req: NextRequest,
-  ctx: { params: Promise<{ id: string }> }
-) {
-  await requireAuth()
-  const { id } = await ctx.params
-
-  const job = await prisma.job.findUnique({
+// ── Fetcher (types derived from these) ──────────────────────────────────────
+async function fetchJob(id: string) {
+  return prisma.job.findUnique({
     where: { id },
     include: {
       customer: true,
@@ -31,11 +26,25 @@ export async function GET(
       },
     },
   })
+}
+
+type JobDetail    = NonNullable<Awaited<ReturnType<typeof fetchJob>>>
+type JobPartDetail = JobDetail['jobParts'][number]
+type StepDetail   = JobPartDetail['routingSteps'][number]
+
+export async function GET(
+  _req: NextRequest,
+  ctx: { params: Promise<{ id: string }> }
+) {
+  await requireAuth()
+  const { id } = await ctx.params
+
+  const job = await fetchJob(id)
 
   if (!job) return Response.json({ error: 'Job not found' }, { status: 404 })
 
-  const allSteps = job.jobParts.flatMap(p => p.routingSteps)
-  const activeStep = allSteps.find(s => s.status === 'IN_PROGRESS')
+  const allSteps = job.jobParts.flatMap((p: JobPartDetail) => p.routingSteps)
+  const activeStep = allSteps.find((s: StepDetail) => s.status === 'IN_PROGRESS')
 
   const result = {
     id: job.id,
@@ -51,8 +60,8 @@ export async function GET(
     totalParts: job.jobParts.length,
     activeOperation: activeStep?.operation.name ?? null,
     stepsTotal: allSteps.length,
-    stepsDone: allSteps.filter(s => s.status === 'COMPLETED').length,
-    jobParts: job.jobParts.map(jp => ({
+    stepsDone: allSteps.filter((s: StepDetail) => s.status === 'COMPLETED').length,
+    jobParts: job.jobParts.map((jp: JobPartDetail) => ({
       id: jp.id,
       partId: jp.partId,
       partName: jp.part.name,
@@ -62,7 +71,7 @@ export async function GET(
       rejectedQty: jp.rejectedQty,
       reworkQty: jp.reworkQty,
       pendingQty: jp.totalQty - jp.completedQty - jp.rejectedQty,
-      routingSteps: jp.routingSteps.map(s => ({
+      routingSteps: jp.routingSteps.map((s: StepDetail) => ({
         id: s.id,
         operationId: s.operationId,
         operationName: s.operation.name,

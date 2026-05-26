@@ -5,19 +5,10 @@ import { getJobDelayStatus } from '@/lib/qty'
 import { generateJobNumber } from '@/lib/utils'
 import type { CreateJobRequest } from '@/types'
 
-export async function GET(request: Request) {
-  await requireAuth()
-  const { searchParams } = new URL(request.url)
-  const status = searchParams.get('status')
-  const priority = searchParams.get('priority')
-  const customerId = searchParams.get('customerId')
-
-  const jobs = await prisma.job.findMany({
-    where: {
-      ...(status ? { status: status as any } : {}),
-      ...(priority ? { priority: priority as any } : {}),
-      ...(customerId ? { customerId } : {}),
-    },
+// ── Fetcher (types derived from these) ──────────────────────────────────────
+async function fetchJobs(where: Parameters<typeof prisma.job.findMany>[0]['where']) {
+  return prisma.job.findMany({
+    where,
     include: {
       customer: { select: { name: true } },
       jobParts: {
@@ -31,12 +22,30 @@ export async function GET(request: Request) {
     },
     orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
   })
+}
 
-  const result = jobs.map(job => {
-    const allSteps = job.jobParts.flatMap(p => p.routingSteps)
-    const activeStep = allSteps.find(s => s.status === 'IN_PROGRESS')
+type JobRow      = Awaited<ReturnType<typeof fetchJobs>>[number]
+type JobPart     = JobRow['jobParts'][number]
+type RoutingStep = JobPart['routingSteps'][number]
+
+export async function GET(request: Request) {
+  await requireAuth()
+  const { searchParams } = new URL(request.url)
+  const status = searchParams.get('status')
+  const priority = searchParams.get('priority')
+  const customerId = searchParams.get('customerId')
+
+  const jobs = await fetchJobs({
+    ...(status ? { status: status as any } : {}),
+    ...(priority ? { priority: priority as any } : {}),
+    ...(customerId ? { customerId } : {}),
+  })
+
+  const result = jobs.map((job: JobRow) => {
+    const allSteps = job.jobParts.flatMap((p: JobPart) => p.routingSteps)
+    const activeStep = allSteps.find((s: RoutingStep) => s.status === 'IN_PROGRESS')
     const stepsTotal = allSteps.length
-    const stepsDone = allSteps.filter(s => s.status === 'COMPLETED').length
+    const stepsDone = allSteps.filter((s: RoutingStep) => s.status === 'COMPLETED').length
 
     return {
       id: job.id,
