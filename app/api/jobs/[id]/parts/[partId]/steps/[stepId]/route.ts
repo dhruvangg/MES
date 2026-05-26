@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { stepPendingQty, validateStepUpdate } from '@/lib/qty'
 import type { NextRequest } from 'next/server'
+import type { Prisma } from '@prisma/client'
 
 // ── Fetchers (types derived from these) ────────────────────────────────────
 async function fetchStep(stepId: string) {
@@ -95,7 +96,7 @@ export async function PATCH(
   const { valid, available } = validateStepUpdate(step, qty)
   if (!valid) return Response.json({ error: `Only ${available} pcs available` }, { status: 400 })
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const newPassed   = action === 'PASS'   ? step.qtyPassed   + qty : step.qtyPassed
     const newRejected = action === 'REJECT' ? step.qtyRejected + qty : step.qtyRejected
     const newPending  = step.qtyIn - newPassed - step.qtyRework - newRejected

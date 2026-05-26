@@ -1,6 +1,7 @@
 // app/api/di/route.ts
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
+import type { Prisma } from '@prisma/client'
 
 // ── Fetcher (type derived from this) ───────────────────────────────────────
 async function fetchDIs(where: Parameters<typeof prisma.discrepancyIssue.findMany>[0]['where']) {
@@ -116,7 +117,7 @@ export async function PATCH(request: Request) {
     }
   }
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // 1. Resolve the DI
     await tx.discrepancyIssue.update({
       where: { id },
