@@ -49,6 +49,7 @@ type ActiveJobRow      = Awaited<ReturnType<typeof fetchActiveJobs>>[number]
 type ActiveJobPart     = ActiveJobRow['jobParts'][number]
 type ActiveRoutingStep = ActiveJobPart['routingSteps'][number]
 type HistoryJobRow     = Awaited<ReturnType<typeof fetchHistoryJobs>>[number]
+type HistoryJobPart    = HistoryJobRow['jobParts'][number]
 
 // ── Data mappers ──────────────────────────────────────────────────────────────
 
@@ -208,7 +209,7 @@ async function HistoryView() {
           </div>
           <div className="space-y-2">
             {completed.map((job: HistoryJobRow) => {
-              const allSteps = job.jobParts.flatMap(p => p.routingSteps)
+              const allSteps = job.jobParts.flatMap((p: HistoryJobPart) => p.routingSteps)
               return (
                 <Link key={job.id} href={`/jobs/${job.id}`} className="block">
                   <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow active:scale-[0.99]">
