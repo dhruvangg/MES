@@ -1,11 +1,12 @@
 // app/api/di/route.ts
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
+import { type Prisma } from '@prisma/client'
 
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
 // ── Fetcher (type derived from this) ───────────────────────────────────────
-async function fetchDIs(where: Parameters<typeof prisma.discrepancyIssue.findMany>[0]['where']) {
+async function fetchDIs(where: Prisma.DiscrepancyIssueWhereInput) {
   return prisma.discrepancyIssue.findMany({
     where,
     include: {

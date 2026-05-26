@@ -4,11 +4,12 @@ import { requireAuth } from '@/lib/auth'
 import { getJobDelayStatus } from '@/lib/qty'
 import { generateJobNumber } from '@/lib/utils'
 import type { CreateJobRequest } from '@/types'
+import { type Prisma } from '@prisma/client'
 
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
 // ── Fetcher (types derived from these) ──────────────────────────────────────
-async function fetchJobs(where: Parameters<typeof prisma.job.findMany>[0]['where']) {
+async function fetchJobs(where: Prisma.JobWhereInput) {
   return prisma.job.findMany({
     where,
     include: {
