@@ -4,7 +4,8 @@ import { requireAuth } from '@/lib/auth'
 import { getJobDelayStatus } from '@/lib/qty'
 import { generateJobNumber } from '@/lib/utils'
 import type { CreateJobRequest } from '@/types'
-import type { Prisma } from '@prisma/client'
+
+type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
 // ── Fetcher (types derived from these) ──────────────────────────────────────
 async function fetchJobs(where: Parameters<typeof prisma.job.findMany>[0]['where']) {
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Customer and at least one part required' }, { status: 400 })
   }
 
-  const job = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const job = await prisma.$transaction(async (tx: TransactionClient) => {
     const newJob = await tx.job.create({
       data: {
         jobNumber: generateJobNumber(),
