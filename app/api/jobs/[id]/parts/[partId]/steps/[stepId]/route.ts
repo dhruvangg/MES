@@ -4,14 +4,9 @@ import { requireAuth } from '@/lib/auth'
 import { stepPendingQty, validateStepUpdate } from '@/lib/qty'
 import type { NextRequest } from 'next/server'
 
-export async function GET(
-  _req: NextRequest,
-  ctx: { params: Promise<{ id: string; partId: string; stepId: string }> }
-) {
-  await requireAuth()
-  const { partId, stepId } = await ctx.params
-
-  const step = await prisma.routingStep.findUnique({
+// ── Fetchers (types derived from these) ────────────────────────────────────
+async function fetchStep(stepId: string) {
+  return prisma.routingStep.findUnique({
     where: { id: stepId },
     include: {
       operation: true,
@@ -25,6 +20,28 @@ export async function GET(
       },
     },
   })
+}
+
+type StepWithRelations = NonNullable<Awaited<ReturnType<typeof fetchStep>>>
+type SiblingStepRow    = StepWithRelations['jobPart']['routingSteps'][number]
+
+async function fetchAllParts(jobId: string) {
+  return prisma.jobPart.findMany({
+    where: { jobId },
+    include: { routingSteps: { orderBy: { sequence: 'desc' }, take: 1 } },
+  })
+}
+
+type AllPartRow = Awaited<ReturnType<typeof fetchAllParts>>[number]
+
+export async function GET(
+  _req: NextRequest,
+  ctx: { params: Promise<{ id: string; partId: string; stepId: string }> }
+) {
+  await requireAuth()
+  const { partId, stepId } = await ctx.params
+
+  const step = await fetchStep(stepId)
 
   if (!step || step.jobPartId !== partId) {
     return Response.json({ error: 'Step not found' }, { status: 404 })
@@ -49,7 +66,7 @@ export async function GET(
       customerName: step.jobPart.job.customer.name,
     },
     // All sibling steps — used to build the rework re-entry picker
-    siblingSteps: step.jobPart.routingSteps.map(s => ({
+    siblingSteps: step.jobPart.routingSteps.map((s: SiblingStepRow) => ({
       id: s.id,
       sequence: s.sequence,
       operationName: s.operation.name,
@@ -128,7 +145,7 @@ export async function PATCH(
           where: { jobId },
           include: { routingSteps: { orderBy: { sequence: 'desc' }, take: 1 } },
         })
-        const allDone = allParts.every(p => p.routingSteps[0]?.status === 'COMPLETED')
+        const allDone = allParts.every((p: AllPartRow) => p.routingSteps[0]?.status === 'COMPLETED')
         if (allDone) await tx.job.update({ where: { id: jobId }, data: { status: 'COMPLETED' } })
       }
     }

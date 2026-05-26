@@ -2,19 +2,10 @@
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 
-export async function GET(request: Request) {
-  await requireAuth()
-  const { searchParams } = new URL(request.url)
-  const jobPartId = searchParams.get('jobPartId')
-  const routingStepId = searchParams.get('routingStepId')
-  const disposition = searchParams.get('disposition')
-
-  const dis = await prisma.discrepancyIssue.findMany({
-    where: {
-      ...(jobPartId ? { jobPartId } : {}),
-      ...(routingStepId ? { routingStepId } : {}),
-      ...(disposition ? { disposition: disposition as any } : {}),
-    },
+// ── Fetcher (type derived from this) ───────────────────────────────────────
+async function fetchDIs(where: Parameters<typeof prisma.discrepancyIssue.findMany>[0]['where']) {
+  return prisma.discrepancyIssue.findMany({
+    where,
     include: {
       routingStep: { include: { operation: { select: { name: true } } } },
       reworkTargetStep: { include: { operation: { select: { name: true } } } },
@@ -22,8 +13,24 @@ export async function GET(request: Request) {
     },
     orderBy: { createdAt: 'desc' },
   })
+}
 
-  return Response.json(dis.map(d => ({
+type DIRow = Awaited<ReturnType<typeof fetchDIs>>[number]
+
+export async function GET(request: Request) {
+  await requireAuth()
+  const { searchParams } = new URL(request.url)
+  const jobPartId = searchParams.get('jobPartId')
+  const routingStepId = searchParams.get('routingStepId')
+  const disposition = searchParams.get('disposition')
+
+  const dis = await fetchDIs({
+    ...(jobPartId ? { jobPartId } : {}),
+    ...(routingStepId ? { routingStepId } : {}),
+    ...(disposition ? { disposition: disposition as any } : {}),
+  })
+
+  return Response.json(dis.map((d: DIRow) => ({
     id: d.id,
     jobPartId: d.jobPartId,
     routingStepId: d.routingStepId,
