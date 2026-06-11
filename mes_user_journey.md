@@ -11,7 +11,7 @@
 | Language | TypeScript |
 | Database | PostgreSQL (Docker) |
 | ORM | Prisma |
-| Auth | Session-based (bcrypt + cookies) |
+| Auth | Hybrid: Session-based cookies (bcrypt + JWT) + **Auth.js v5 (Google OAuth)** |
 | UI | Tailwind CSS + Lucide icons |
 | Deployment | Vercel (production) / localhost (dev) |
 
@@ -33,10 +33,14 @@
 
 ### 1. 🔐 Login
 
-The app starts at a clean login screen with the **MES — Production Tracker** branding. Users authenticate with email and password (session-based auth using bcrypt-hashed passwords and HTTP-only cookies).
+The app starts at a clean login screen with the **MES — Production Tracker** branding. Users can authenticate in two ways:
+1. **Credentials**: Email and password (session-based custom auth using bcrypt-hashed passwords and HTTP-only cookies).
+2. **Google OAuth**: Single Sign-On powered by **Auth.js v5 (NextAuth)**. If a first-time Google user logs in, the system automatically creates their operator account in the database.
 
 - **Default credentials**: `admin@mes.local` / `admin123`
 - After login, users are redirected to the **Job Board**
+
+![Login screen showing custom login form and Google Sign-in button](C:\Users\Champ\.gemini\antigravity\brain\229b1ccb-664a-4d47-a64f-06707957ed58\artifacts\15_login_page_google.png)
 
 ---
 
@@ -216,6 +220,19 @@ Back on the Job Board, the new order appears in the list.
 
 ---
 
+### 9. ⚙️ Settings Page
+
+The Settings page displays system diagnostics and configuration options for the MES.
+
+![Settings page showing user profile, config toggles, and database metrics](C:\Users\Champ\.gemini\antigravity\brain\229b1ccb-664a-4d47-a64f-06707957ed58\artifacts\14_settings_page.png)
+
+**Sections:**
+- **User Profile**: Details of the currently logged-in operator, including Name, Email, System Role, and Auth type.
+- **Shop Floor System Config**: Interactive toggles for system behavior, such as enforcing strict routing sequence, enabling real-time quality alerts, or requiring supervisor authorization pins for high scrap counts.
+- **System Diagnostics & Database**: Real-time database metrics showing totals for jobs, customers, and parts catalog, along with the active connection details (with credentials safely masked).
+
+---
+
 ## Application Architecture
 
 ```mermaid
@@ -267,3 +284,5 @@ The following recordings capture the complete interaction flows:
 | `create_order_step1` | New order wizard — Step 1 (order details) |
 | `create_order_step2` | New order wizard — Steps 2 & 3 (routing + review) |
 | `submit_order` | Final submission and viewing the created job |
+| `settings_page_check` | Navigating to and verifying the Settings page UI |
+| `login_page_google_btn_check` | Verifying the Google Login button integration on the login page |

@@ -1,7 +1,7 @@
 // lib/auth.ts
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
-import { prisma } from './prisma'
+import { auth } from '@/auth'
 
 const SECRET_KEY = new TextEncoder().encode(
   process.env.JWT_SECRET ?? 'mes-secret-key-change-in-production-32chars'
@@ -39,8 +39,28 @@ export async function verifySession(token: string): Promise<SessionUser | null> 
 export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies()
   const token = cookieStore.get(COOKIE_NAME)?.value
-  if (!token) return null
-  return verifySession(token)
+  
+  if (token) {
+    const customUser = await verifySession(token)
+    if (customUser) return customUser
+  }
+
+  // Fallback to NextAuth session
+  try {
+    const nextSession = await auth()
+    if (nextSession?.user?.email) {
+      return {
+        id: nextSession.user.id as string,
+        name: nextSession.user.name || nextSession.user.email.split('@')[0],
+        email: nextSession.user.email,
+        role: (nextSession.user as any).role || 'ADMIN',
+      }
+    }
+  } catch (err) {
+    console.error('NextAuth session check error:', err)
+  }
+
+  return null
 }
 
 export async function setSessionCookie(token: string): Promise<void> {
