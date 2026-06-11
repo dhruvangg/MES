@@ -4,8 +4,6 @@ import { requireAuth } from '@/lib/auth'
 import { stepPendingQty, validateStepUpdate } from '@/lib/qty'
 import type { NextRequest } from 'next/server'
 
-type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
-
 // ── Fetchers (types derived from these) ────────────────────────────────────
 async function fetchStep(stepId: string) {
   return prisma.routingStep.findUnique({
@@ -97,63 +95,61 @@ export async function PATCH(
   const { valid, available } = validateStepUpdate(step, qty)
   if (!valid) return Response.json({ error: `Only ${available} pcs available` }, { status: 400 })
 
-  const result = await prisma.$transaction(async (tx: TransactionClient) => {
-    const newPassed   = action === 'PASS'   ? step.qtyPassed   + qty : step.qtyPassed
-    const newRejected = action === 'REJECT' ? step.qtyRejected + qty : step.qtyRejected
-    const newPending  = step.qtyIn - newPassed - step.qtyRework - newRejected
-    const isNowDone   = newPending <= 0
+  // Sequential operations instead of interactive $transaction
+  // (Prisma driver adapters have unreliable interactive transaction support)
+  const newPassed   = action === 'PASS'   ? step.qtyPassed   + qty : step.qtyPassed
+  const newRejected = action === 'REJECT' ? step.qtyRejected + qty : step.qtyRejected
+  const newPending  = step.qtyIn - newPassed - step.qtyRework - newRejected
+  const isNowDone   = newPending <= 0
 
-    const updatedStep = await tx.routingStep.update({
-      where: { id: stepId },
-      data: {
-        qtyPassed: newPassed,
-        qtyRejected: newRejected,
-        status: isNowDone ? 'COMPLETED' : 'IN_PROGRESS',
-        startedAt: step.startedAt ?? new Date(),
-        completedAt: isNowDone ? new Date() : undefined,
-        updatedById: session.id,
-      },
-    })
-
-    await tx.productionLog.create({
-      data: { jobPartId: partId, routingStepId: stepId, action, qty, notes, updatedById: session.id },
-    })
-
-    if (action === 'REJECT') {
-      await tx.jobPart.update({ where: { id: partId }, data: { rejectedQty: { increment: qty } } })
-    }
-
-    if (isNowDone && newPassed > 0) {
-      const nextStep = await tx.routingStep.findFirst({
-        where: { jobPartId: partId, sequence: step.sequence + 1 },
-      })
-      if (nextStep) {
-        // Use increment if step already has data (rework re-entry scenario)
-        if (nextStep.qtyIn > 0) {
-          await tx.routingStep.update({
-            where: { id: nextStep.id },
-            data: { status: 'IN_PROGRESS', qtyIn: { increment: newPassed }, completedAt: null },
-          })
-        } else {
-          await tx.routingStep.update({
-            where: { id: nextStep.id },
-            data: { status: 'IN_PROGRESS', qtyIn: newPassed, startedAt: new Date() },
-          })
-        }
-      } else {
-        // Last step — mark job part complete and check if whole job is done
-        await tx.jobPart.update({ where: { id: partId }, data: { completedQty: { increment: newPassed } } })
-        const allParts = await tx.jobPart.findMany({
-          where: { jobId },
-          include: { routingSteps: { orderBy: { sequence: 'desc' }, take: 1 } },
-        })
-        const allDone = allParts.every((p: AllPartRow) => p.routingSteps[0]?.status === 'COMPLETED')
-        if (allDone) await tx.job.update({ where: { id: jobId }, data: { status: 'COMPLETED' } })
-      }
-    }
-
-    return updatedStep
+  const updatedStep = await prisma.routingStep.update({
+    where: { id: stepId },
+    data: {
+      qtyPassed: newPassed,
+      qtyRejected: newRejected,
+      status: isNowDone ? 'COMPLETED' : 'IN_PROGRESS',
+      startedAt: step.startedAt ?? new Date(),
+      completedAt: isNowDone ? new Date() : undefined,
+      updatedById: session.id,
+    },
   })
 
-  return Response.json(result)
+  await prisma.productionLog.create({
+    data: { jobPartId: partId, routingStepId: stepId, action, qty, notes, updatedById: session.id },
+  })
+
+  if (action === 'REJECT') {
+    await prisma.jobPart.update({ where: { id: partId }, data: { rejectedQty: { increment: qty } } })
+  }
+
+  if (isNowDone && newPassed > 0) {
+    const nextStep = await prisma.routingStep.findFirst({
+      where: { jobPartId: partId, sequence: step.sequence + 1 },
+    })
+    if (nextStep) {
+      // Use increment if step already has data (rework re-entry scenario)
+      if (nextStep.qtyIn > 0) {
+        await prisma.routingStep.update({
+          where: { id: nextStep.id },
+          data: { status: 'IN_PROGRESS', qtyIn: { increment: newPassed }, completedAt: null },
+        })
+      } else {
+        await prisma.routingStep.update({
+          where: { id: nextStep.id },
+          data: { status: 'IN_PROGRESS', qtyIn: newPassed, startedAt: new Date() },
+        })
+      }
+    } else {
+      // Last step — mark job part complete and check if whole job is done
+      await prisma.jobPart.update({ where: { id: partId }, data: { completedQty: { increment: newPassed } } })
+      const allParts = await prisma.jobPart.findMany({
+        where: { jobId },
+        include: { routingSteps: { orderBy: { sequence: 'desc' }, take: 1 } },
+      })
+      const allDone = allParts.every((p: AllPartRow) => p.routingSteps[0]?.status === 'COMPLETED')
+      if (allDone) await prisma.job.update({ where: { id: jobId }, data: { status: 'COMPLETED' } })
+    }
+  }
+
+  return Response.json(updatedStep)
 }

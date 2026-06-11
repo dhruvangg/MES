@@ -3,8 +3,6 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { type Prisma } from '@prisma/client'
 
-type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
-
 // ── Fetcher (type derived from this) ───────────────────────────────────────
 async function fetchDIs(where: Prisma.DiscrepancyIssueWhereInput) {
   return prisma.discrepancyIssue.findMany({
@@ -119,104 +117,103 @@ export async function PATCH(request: Request) {
     }
   }
 
-  const result = await prisma.$transaction(async (tx: TransactionClient) => {
-    // 1. Resolve the DI
-    await tx.discrepancyIssue.update({
-      where: { id },
+  // Sequential operations instead of interactive $transaction
+  // (Prisma driver adapters have unreliable interactive transaction support)
+
+  // 1. Resolve the DI
+  await prisma.discrepancyIssue.update({
+    where: { id },
+    data: {
+      disposition,
+      isReworkable: disposition === 'REWORK',
+      reworkTargetStepId: disposition === 'REWORK' ? reworkTargetStepId : null,
+      resolvedAt: new Date(),
+      updatedById: session.id,
+    },
+  })
+
+  if (disposition === 'REWORK') {
+    // 2a. Log it on the ORIGINAL step
+    await prisma.routingStep.update({
+      where: { id: di.routingStepId },
+      data: { qtyRework: { increment: di.qty } },
+    })
+    await prisma.jobPart.update({
+      where: { id: di.jobPartId },
+      data: { reworkQty: { increment: di.qty } },
+    })
+    await prisma.productionLog.create({
       data: {
-        disposition,
-        isReworkable: disposition === 'REWORK',
-        reworkTargetStepId: disposition === 'REWORK' ? reworkTargetStepId : null,
-        resolvedAt: new Date(),
+        jobPartId: di.jobPartId,
+        routingStepId: di.routingStepId,
+        action: 'REWORK',
+        qty: di.qty,
+        notes: `DI resolved → rework at Step ${reworkTargetStepId}. Reason: ${di.reason}`,
         updatedById: session.id,
       },
     })
 
-    if (disposition === 'REWORK') {
-      // 2a. Log it on the ORIGINAL step
-      await tx.routingStep.update({
+    // 2b. Re-inject parts into the rework target step
+    await prisma.routingStep.update({
+      where: { id: reworkTargetStepId },
+      data: {
+        status: 'IN_PROGRESS',
+        qtyIn: { increment: di.qty },
+        completedAt: null, // Re-open if it was completed
+      },
+    })
+  }
+
+  if (disposition === 'REJECTED') {
+    await prisma.routingStep.update({
+      where: { id: di.routingStepId },
+      data: { qtyRejected: { increment: di.qty } },
+    })
+    await prisma.jobPart.update({
+      where: { id: di.jobPartId },
+      data: { rejectedQty: { increment: di.qty } },
+    })
+    await prisma.productionLog.create({
+      data: {
+        jobPartId: di.jobPartId,
+        routingStepId: di.routingStepId,
+        action: 'REJECT',
+        qty: di.qty,
+        notes: `DI permanently rejected — ${di.reason}`,
+        updatedById: session.id,
+      },
+    })
+  }
+
+  // 3. Check if original step is now fully dispositioned
+  const refreshedStep = await prisma.routingStep.findUnique({ where: { id: di.routingStepId } })
+  if (refreshedStep && refreshedStep.status !== 'COMPLETED') {
+    const nowPending = refreshedStep.qtyIn - refreshedStep.qtyPassed - refreshedStep.qtyRework - refreshedStep.qtyRejected
+    if (nowPending <= 0) {
+      await prisma.routingStep.update({
         where: { id: di.routingStepId },
-        data: { qtyRework: { increment: di.qty } },
+        data: { status: 'COMPLETED', completedAt: new Date() },
       })
-      await tx.jobPart.update({
-        where: { id: di.jobPartId },
-        data: { reworkQty: { increment: di.qty } },
-      })
-      await tx.productionLog.create({
-        data: {
-          jobPartId: di.jobPartId,
-          routingStepId: di.routingStepId,
-          action: 'REWORK',
-          qty: di.qty,
-          notes: `DI resolved → rework at Step ${reworkTargetStepId}. Reason: ${di.reason}`,
-          updatedById: session.id,
-        },
-      })
-
-      // 2b. Re-inject parts into the rework target step
-      await tx.routingStep.update({
-        where: { id: reworkTargetStepId },
-        data: {
-          status: 'IN_PROGRESS',
-          qtyIn: { increment: di.qty },
-          completedAt: null, // Re-open if it was completed
-        },
-      })
-    }
-
-    if (disposition === 'REJECTED') {
-      await tx.routingStep.update({
-        where: { id: di.routingStepId },
-        data: { qtyRejected: { increment: di.qty } },
-      })
-      await tx.jobPart.update({
-        where: { id: di.jobPartId },
-        data: { rejectedQty: { increment: di.qty } },
-      })
-      await tx.productionLog.create({
-        data: {
-          jobPartId: di.jobPartId,
-          routingStepId: di.routingStepId,
-          action: 'REJECT',
-          qty: di.qty,
-          notes: `DI permanently rejected — ${di.reason}`,
-          updatedById: session.id,
-        },
-      })
-    }
-
-    // 3. Check if original step is now fully dispositioned
-    const refreshedStep = await tx.routingStep.findUnique({ where: { id: di.routingStepId } })
-    if (refreshedStep && refreshedStep.status !== 'COMPLETED') {
-      const nowPending = refreshedStep.qtyIn - refreshedStep.qtyPassed - refreshedStep.qtyRework - refreshedStep.qtyRejected
-      if (nowPending <= 0) {
-        await tx.routingStep.update({
-          where: { id: di.routingStepId },
-          data: { status: 'COMPLETED', completedAt: new Date() },
+      if (refreshedStep.qtyPassed > 0) {
+        const nextStep = await prisma.routingStep.findFirst({
+          where: { jobPartId: di.jobPartId, sequence: refreshedStep.sequence + 1 },
         })
-        if (refreshedStep.qtyPassed > 0) {
-          const nextStep = await tx.routingStep.findFirst({
-            where: { jobPartId: di.jobPartId, sequence: refreshedStep.sequence + 1 },
-          })
-          if (nextStep) {
-            if (nextStep.qtyIn > 0) {
-              await tx.routingStep.update({
-                where: { id: nextStep.id },
-                data: { status: 'IN_PROGRESS', qtyIn: { increment: refreshedStep.qtyPassed }, completedAt: null },
-              })
-            } else {
-              await tx.routingStep.update({
-                where: { id: nextStep.id },
-                data: { status: 'IN_PROGRESS', qtyIn: refreshedStep.qtyPassed, startedAt: new Date() },
-              })
-            }
+        if (nextStep) {
+          if (nextStep.qtyIn > 0) {
+            await prisma.routingStep.update({
+              where: { id: nextStep.id },
+              data: { status: 'IN_PROGRESS', qtyIn: { increment: refreshedStep.qtyPassed }, completedAt: null },
+            })
+          } else {
+            await prisma.routingStep.update({
+              where: { id: nextStep.id },
+              data: { status: 'IN_PROGRESS', qtyIn: refreshedStep.qtyPassed, startedAt: new Date() },
+            })
           }
         }
       }
     }
+  }
 
-    return { ok: true }
-  })
-
-  return Response.json(result)
+  return Response.json({ ok: true })
 }

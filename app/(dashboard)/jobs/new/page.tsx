@@ -124,8 +124,12 @@ export default function NewJobPage() {
       })
 
       if (!res.ok) {
-        const d = await res.json()
-        setError(d.error ?? 'Failed to create job')
+        try {
+          const d = await res.json()
+          setError(d.error ?? `Failed to create job (${res.status})`)
+        } catch {
+          setError(`Failed to create job (${res.status})`)
+        }
         return
       }
 
